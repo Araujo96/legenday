@@ -1,0 +1,7 @@
+# Fins de linha consistentes (Windows/Linux) e imagens/vídeos sempre tratados como binário
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.gif binary
+*.jpg binary
+*.mp4 binary

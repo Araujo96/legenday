@@ -1,0 +1,35 @@
+legenDay - aprenda inglês assistindo filmes e séries
+=====================================================
+
+COMO USAR
+1. Extraia esta pasta (botão direito no .zip > "Extrair tudo...").
+   Não abra o programa de dentro do .zip, senão ele não funciona.
+2. Abra a pasta extraída e dê dois cliques em legenDay.exe.
+3. Arraste um filme ou episódio para a janela (ou clique em "Vídeo" e escolha o arquivo).
+   Se a legenda em inglês (.srt) tiver o mesmo nome do vídeo e estiver na mesma pasta, ela abre sozinha.
+   Senão, arraste o .srt para a janela ou use o botão "Legenda". Legendas que vêm dentro do vídeo (MKV/MP4)
+   também funcionam.
+4. Clique em qualquer palavra da legenda para ver a tradução.
+
+Não precisa instalar nada. Para levar para outro computador, é só copiar a pasta.
+Para atalho na área de trabalho: botão direito em legenDay.exe > "Mostrar mais opções" > "Enviar para" >
+"Área de trabalho (criar atalho)".
+
+"O WINDOWS PROTEGEU O COMPUTADOR"
+Na primeira vez, o Windows pode mostrar essa tela azul. Ela aparece para programas novos que ainda não são
+conhecidos pela Microsoft, não quer dizer que tenha vírus. Clique em "Mais informações" e depois em
+"Executar assim mesmo". Só acontece uma vez.
+
+PRECISA DE INTERNET?
+Sim, para traduzir (as traduções ficam guardadas, então palavras repetidas aparecem na hora).
+O vídeo toca normalmente sem internet.
+
+SUAS PALAVRAS SALVAS
+Ficam na pasta .legenday dentro da sua pasta de usuário (C:\Users\<seu nome>\.legenday).
+Atualizar ou apagar o programa não apaga suas palavras.
+
+ATALHOS ÚTEIS
+Espaço: pausa/continua    Setas: volta/avança    P: modo repetir frase    T: legenda em português
+F1 ou botão "?": ajuda completa dentro do programa.
+
+Código e novidades: https://github.com/Araujo96/legenday

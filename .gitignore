@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.venv/
+.venv-build/
+venv/
+*.egg-info/
+*.log
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+selftest.txt
+.idea/
+.vscode/
+
+# libmpv e executáveis: não versionar (tamanho e licença); veja libs/README.md
+*.dll
+*.exe
+libs/*
+!libs/.gitkeep
+!libs/README.md
+
+# arquivos de sistema
+Thumbs.db
+desktop.ini
+.DS_Store
