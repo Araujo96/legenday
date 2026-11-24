@@ -8,8 +8,12 @@ from legenday.services import http
 def test_context_trusts_windows_and_certifi_authorities():
     ctx = http.ssl_context()
     assert ctx.verify_mode == ssl.CERT_REQUIRED and ctx.check_hostname
+    import certifi
+    only_certifi = ssl.create_default_context(cafile=certifi.where()).cert_store_stats()["x509_ca"]
     only_system = ssl.create_default_context().cert_store_stats()["x509_ca"]
-    assert ctx.cert_store_stats()["x509_ca"] > only_system        # a lista do certifi entrou
+    # a lista do certifi entrou (no Linux ela costuma ser igual à do sistema; no Windows, soma às dele)
+    assert ctx.cert_store_stats()["x509_ca"] >= max(only_certifi, only_system)
+    assert only_certifi > 100
 
 
 def test_every_service_connects_through_the_shared_context():
