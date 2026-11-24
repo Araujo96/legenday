@@ -71,14 +71,38 @@ jobs:
           Copy-Item packaging\LEIA-ME.txt dist\legenDay\LEIA-ME.txt
           Compress-Archive -Path dist\legenDay -DestinationPath legenDay-windows-x64.zip
 
+      - name: Montar o instalador (legenDay-Setup.exe)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $version = python -c "import legenday; print(legenday.__version__)"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$version" packaging\legenday.iss
+          if ($LASTEXITCODE -ne 0) { throw "O Inno Setup falhou" }
+          Move-Item dist\legenDay-Setup.exe legenDay-Setup.exe
+
+      - name: Testar o instalador (instala, abre o autoteste e desinstala)
+        shell: pwsh
+        run: |
+          $dir = "$env:RUNNER_TEMP\legenday-instalado"
+          $p = Start-Process .\legenDay-Setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/TASKS=","/DIR=`"$dir`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "O instalador falhou ($($p.ExitCode))" }
+          $t = Start-Process "$dir\legenDay.exe" -ArgumentList "--selftest" -Wait -PassThru
+          Get-Content "$dir\selftest.txt"
+          if ($t.ExitCode -ne 0) { throw "O app instalado falhou no autoteste" }
+          Start-Process "$dir\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
+
       - uses: actions/upload-artifact@v4
         with:
           name: legenDay-windows-x64
-          path: legenDay-windows-x64.zip
+          path: |
+            legenDay-Setup.exe
+            legenDay-windows-x64.zip
 
       - name: Publicar na página de Releases
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: legenDay-windows-x64.zip
+          files: |
+            legenDay-Setup.exe
+            legenDay-windows-x64.zip
           generate_release_notes: true

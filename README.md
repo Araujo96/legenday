@@ -66,12 +66,19 @@ Tudo com cache local em SQLite: a segunda consulta é instantânea.
 
 <sub>Cenas de <a href="https://mango.blender.org">Tears of Steel</a> (CC BY 3.0) © Blender Foundation | mango.blender.org.</sub>
 
-## Baixar e usar (Windows, sem instalar nada)
+## Baixar e usar (Windows)
 
-1. Abra a página de [Releases](https://github.com/Araujo96/legenday/releases/latest) e baixe o arquivo
-   `legenDay-windows-x64.zip`.
-2. Extraia o `.zip` (botão direito → *Extrair tudo*) numa pasta de sua escolha.
-3. Abra a pasta e dê dois cliques em **`legenDay.exe`**. Não precisa instalar Python nem mais nada.
+<p align="center">
+  <a href="https://github.com/Araujo96/legenday/releases/latest/download/legenDay-Setup.exe"><b>⬇ Baixar o legenDay para Windows</b></a>
+</p>
+
+1. Baixe o **`legenDay-Setup.exe`** (link acima ou na página de
+   [Releases](https://github.com/Araujo96/legenday/releases/latest)).
+2. Dê dois cliques nele e siga o instalador. Ele cria os atalhos na área de trabalho e no menu Iniciar e já abre
+   o app. Não pede senha de administrador e não precisa instalar Python nem mais nada.
+
+Para atualizar, é só rodar o instalador da versão nova (suas palavras salvas continuam). Prefere sem instalar?
+Na mesma página há o `legenDay-windows-x64.zip`: extraia e abra o `legenDay.exe`.
 
 > **O Windows mostrou "O Windows protegeu o computador"?** É normal em programas novos que ainda não têm
 > assinatura digital. Clique em **Mais informações** e depois em **Executar assim mesmo**. O código-fonte é
@@ -151,23 +158,6 @@ python tools/install_argos_model.py
 Botão **Palavras → Exportar para o Anki…** gera um arquivo `.txt`. No Anki, use **Arquivo → Importar**:
 frente = palavra (com pronúncia), verso = tradução, definição e a frase do filme com a palavra em negrito;
 as tags incluem o nome do filme.
-
-## Gerar o executável (para quem mantém o projeto)
-
-O executável é montado automaticamente pelo GitHub, num Windows de verdade, sempre que você publica uma versão:
-
-```
-git tag v0.4.0
-git push origin v0.4.0
-```
-
-O fluxo [`.github/workflows/release.yml`](.github/workflows/release.yml) baixa versões fixas do libmpv e de um
-ffmpeg LGPL (conferindo o SHA-256 de cada uma), monta o programa com o PyInstaller, roda um autoteste
-(`legenDay.exe --selftest`) e anexa o `legenDay-windows-x64.zip` à página de Releases. Para testar sem publicar,
-abra a aba **Actions → release → Run workflow**; o `.zip` fica disponível como *artifact*.
-
-Para montar no seu próprio computador: coloque o `libmpv-2.dll` em `libs/` e rode
-`powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1`.
 
 ## Como o código é organizado
 

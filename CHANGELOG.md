@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+- **Instalador para Windows (`legenDay-Setup.exe`):** dois cliques e pronto. Instala só para o usuário (sem
+  pedir administrador), cria atalhos na área de trabalho e no menu Iniciar, abre o app no fim e aparece em
+  "Aplicativos instalados" para desinstalar. Para atualizar, é só rodar o instalador da versão nova. O `.zip`
+  portátil continua disponível. O GitHub testa o instalador a cada versão (instala, roda o autoteste e
+  desinstala).
+- Corrige um erro ao fechar a janela de doação logo depois de copiar a chave.
+
 ## 0.6.0
 - **Aviso de versão nova:** ao abrir, o app pergunta ao GitHub qual é a versão mais recente; se for mais nova
   que a instalada, aparece no rodapé o botão **Nova versão X disponível · Baixar**, que abre a página de

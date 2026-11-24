@@ -23,3 +23,15 @@ foreach ($try in 1..6) {
     catch { if ($try -eq 6) { throw }; Start-Sleep -Seconds 5 }
 }
 Write-Host "Pronto: dist\legenDay-windows-x64.zip"
+
+# instalador (legenDay-Setup.exe), se o Inno Setup 6 estiver instalado (winget install JRSoftware.InnoSetup)
+$iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") |
+    Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($iscc) {
+    $version = & .\.venv-build\Scripts\python.exe -c "import legenday; print(legenday.__version__)"
+    & $iscc /Q "/DAppVersion=$version" packaging\legenday.iss
+    if ($LASTEXITCODE -ne 0) { throw "O Inno Setup nao conseguiu gerar o instalador." }
+    Write-Host "Pronto: dist\legenDay-Setup.exe"
+} else {
+    Write-Host "Inno Setup nao encontrado: instalador nao gerado (so o .zip)."
+}
