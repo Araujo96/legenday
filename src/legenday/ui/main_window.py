@@ -5,7 +5,7 @@ dual (legenda em português), study (modo repetir frase e revisão) e player (ac
 """
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtCore import QEvent, QStandardPaths, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -59,6 +59,8 @@ class MainWindow(QMainWindow):
         self._tracks = None            # None = ainda procurando; lista = faixas embutidas encontradas
         self._embedded_error = None
         self._auto_embedded = False
+        self._embedded_stream = None   # faixa de dentro do vídeo em uso (✓ no menu Legenda)
+        self._guessed = {}             # faixa sem idioma -> o texto parece inglês? (para o nome no menu)
         self._help = None
         self._tour = None
         self.vocab = VocabStore()
@@ -120,6 +122,7 @@ class MainWindow(QMainWindow):
         c.show_vocab.connect(self.show_vocab)
         c.show_help.connect(self.show_help)
         c.show_donate.connect(self.show_donate)
+        c.fullscreen_toggled.connect(self.toggle_fullscreen)
         c.play_pause.connect(self.toggle_pause)
         c.prev_line.connect(self.prev_line)
         c.next_line.connect(self.next_line)
@@ -142,6 +145,7 @@ class MainWindow(QMainWindow):
             (QKeySequence("Shift+H"), lambda: self.adjust_sync(1.0)), (Qt.Key_Y, self.align_here),
             (Qt.Key_P, lambda: self.set_shadowing(not self.shadow.enabled)),
             (Qt.Key_T, lambda: self.set_dual(not self.dual.enabled)),
+            (Qt.Key_F, self.subview.translate_full),
         )
         # Valem na janela principal e no pop-up (que é outra janela), mas não em diálogos como o de
         # vocabulário: lá as setas e o Espaço navegam na tabela em vez de mexer no vídeo.
@@ -152,6 +156,11 @@ class MainWindow(QMainWindow):
                 sc.setContext(Qt.WindowShortcut)
                 sc.activated.connect(fn)
                 self._shortcuts.append(sc)
+        # Esc sai da tela cheia (só na janela principal: no pop-up, o Esc continua fechando o pop-up)
+        esc = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        esc.setContext(Qt.WindowShortcut)
+        esc.activated.connect(self.exit_fullscreen)
+        self._shortcuts.append(esc)
 
     # ------------------------------------------------------------ helpers
     def _seek(self, amount, ref="absolute", precision="exact"):
@@ -182,15 +191,37 @@ class MainWindow(QMainWindow):
         return t
 
     # ------------------------------------------------------------ vídeo e legendas
+    @staticmethod
+    def _video_dir() -> str:
+        """Onde a janela "Escolher vídeo" abre: a última pasta usada; na 1ª vez, a pasta Vídeos do Windows.
+        (Sem isso, o Windows abre na pasta de onde o app foi iniciado, às vezes a system32.)"""
+        last = settings.get("last_video_dir")
+        if last and Path(last).is_dir():
+            return last
+        movies = QStandardPaths.writableLocation(QStandardPaths.MoviesLocation)
+        return movies if movies and Path(movies).is_dir() else str(Path.home())
+
+    def _subtitle_dir(self) -> str:
+        """Legendas quase sempre estão junto do vídeo: abre na pasta do vídeo aberto."""
+        if self.video_path and Path(self.video_path).parent.is_dir():
+            return str(Path(self.video_path).parent)
+        return self._video_dir()
+
     def open_video(self, path: str | bool = False):
         if not path:
             path, _ = QFileDialog.getOpenFileName(
-                self, "Escolher vídeo", "", "Vídeos (*.mkv *.mp4 *.avi *.mov *.webm);;Todos (*)")
+                self, "Escolher vídeo", self._video_dir(), "Vídeos (*.mkv *.mp4 *.avi *.mov *.webm);;Todos (*)")
         if not path:
             return
+        try:
+            settings.put("last_video_dir", str(Path(path).parent))   # a próxima escolha abre nesta pasta
+        except OSError:
+            pass
         self.player.play(path)
         self.player.paused = False
         self.video_path, self._tracks, self._embedded_error = path, None, None
+        self._embedded_stream = None
+        self._guessed = {}
         self.dual.set_track(None)
         self._update_hint()
         sub = find_sidecar(path)
@@ -207,7 +238,7 @@ class MainWindow(QMainWindow):
 
     def open_subtitle(self, path: str | bool = False, notice: bool = True):
         if not path:
-            path, _ = QFileDialog.getOpenFileName(self, "Escolher legenda", "", SUB_FILTER)
+            path, _ = QFileDialog.getOpenFileName(self, "Escolher legenda", self._subtitle_dir(), SUB_FILTER)
         if not path:
             return
         try:
@@ -217,6 +248,7 @@ class MainWindow(QMainWindow):
             return
         track.offset = load_offset(path)
         self.track, self._sub_key = track, path
+        self._embedded_stream = None            # arquivo de legenda: nenhuma faixa de dentro do vídeo em uso
         self._shown_ids = None                  # força redesenhar a legenda
         self.shadow.reset()
         self._update_hint()
@@ -227,7 +259,8 @@ class MainWindow(QMainWindow):
     def open_pt_subtitle(self, path: str | bool = False, notice: bool = True):
         """Legenda em português para a 2ª linha (legenda dupla)."""
         if not path:
-            path, _ = QFileDialog.getOpenFileName(self, "Escolher legenda em português", "", SUB_FILTER)
+            path, _ = QFileDialog.getOpenFileName(self, "Escolher legenda em português", self._subtitle_dir(),
+                                                  SUB_FILTER)
         if not path:
             return
         try:
@@ -266,11 +299,18 @@ class MainWindow(QMainWindow):
             note("Não foi possível ler as legendas embutidas")
         else:
             text_tracks = [t for t in self._tracks if t.text]
-            for t in text_tracks:
-                m.addAction("Embutida: " + t.label).triggered.connect(
-                    lambda _=False, t=t: self.load_embedded(t))
+            if text_tracks:
+                note("Legendas dentro do vídeo:")
+            for n, t in enumerate(text_tracks, 1):
+                label = t.label
+                if t.stream in self._guessed:          # sem idioma no arquivo, mas o app já olhou o texto
+                    label += " (parece inglês)" if self._guessed[t.stream] else " (não parece inglês)"
+                action = m.addAction(f"Legenda {n} · {label}")
+                action.setCheckable(True)              # ✓ na que está em uso, alinhado pelo próprio menu
+                action.setChecked(t.stream == self._embedded_stream)
+                action.triggered.connect(lambda _=False, t=t: self.load_embedded(t))
             if not text_tracks:
-                note("Nenhuma legenda embutida em texto")
+                note("Este vídeo não tem legenda dentro dele")
             image_tracks = len(self._tracks) - len(text_tracks)
             if image_tracks:
                 note(f"({image_tracks} faixa(s) em imagem, não suportada(s))")
@@ -294,21 +334,50 @@ class MainWindow(QMainWindow):
             pick = embedded.pick_english(self._tracks)
             if pick:
                 self.load_embedded(pick)
+            else:                      # sem faixa marcada como inglês: testa as sem idioma informado
+                self._try_unknown(embedded.unknown_candidates(self._tracks))
 
-    def load_embedded(self, track):
+    def load_embedded(self, track, then=None):
+        """Extrai a faixa e carrega. `then(caminho)`, se houver, decide no lugar de carregar direto."""
         video = self.video_path
         self.notify("Extraindo a legenda embutida…\nPode levar alguns segundos", 600000)
-        self.tasks.run(lambda: embedded.extract(video, track), lambda r: self._on_extracted(video, r))
+        self.tasks.run(lambda: embedded.extract(video, track), lambda r: self._on_extracted(video, track, r, then))
 
-    def _on_extracted(self, video, payload):
+    def _try_unknown(self, candidates):
+        """Abre a primeira faixa sem idioma informado cujo texto pareça inglês."""
+        if not candidates:
+            if self._tracks and any(t.text for t in self._tracks):
+                self.notify("As legendas dentro do vídeo não parecem estar em inglês.\n"
+                            "Escolha uma no botão Legenda", 5000)
+            return
+        track, rest = candidates[0], candidates[1:]
+
+        def decide(path):
+            self._guessed[track.stream] = english = embedded.looks_english(path)
+            if english:
+                self._use_embedded(track, path)
+            else:
+                self._rebuild_sub_menu()
+                self._try_unknown(rest)
+        self.load_embedded(track, then=decide)
+
+    def _on_extracted(self, video, track, payload, then=None):
         if video != self.video_path:
             return
         if isinstance(payload, Exception):
             self.clear_notice()
             QMessageBox.warning(self, "Legenda embutida", str(payload))
             return
-        self.open_subtitle(str(payload), notice=False)
-        self.notify("Legenda embutida carregada", 3000)
+        if then is not None:
+            then(str(payload))
+        else:
+            self._use_embedded(track, str(payload))
+
+    def _use_embedded(self, track, path):
+        self.open_subtitle(path, notice=False)
+        self._embedded_stream = track.stream
+        self._rebuild_sub_menu()
+        self.notify(f"Legenda carregada: {track.label}\nOutras legendas: botão Legenda", 3500)
 
     # ------------------------------------------------------------ áudio
     def _audio_tracks(self) -> list:
@@ -392,12 +461,14 @@ class MainWindow(QMainWindow):
         self.popup.close()
         for sc in self._shortcuts:          # durante o tour, setas/Espaço/Enter são do tour, não do vídeo
             sc.setEnabled(False)
+        self.subview.set_demo(True)         # "Traduzir a frase" à vista para o tour mostrar, mesmo sem filme
         self._tour = Tour(self)
         self._tour.finished.connect(self._tour_done)
         self._tour.start()
 
     def _tour_done(self):
         self._tour = None
+        self.subview.set_demo(False)
         for sc in self._shortcuts:
             sc.setEnabled(True)
 
@@ -467,8 +538,17 @@ class MainWindow(QMainWindow):
         self._seek(seconds, "relative")
         self.notify(f"{'+' if seconds > 0 else '-'}{abs(seconds)}s", 900)
 
-    def toggle_fullscreen(self):
+    def toggle_fullscreen(self, *_):
         self.showNormal() if self.isFullScreen() else self.showFullScreen()
+
+    def exit_fullscreen(self):
+        if self.isFullScreen():
+            self.showNormal()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.WindowStateChange and hasattr(self, "controls"):   # F11, botão, Esc, Windows
+            self.controls.set_fullscreen(self.isFullScreen())
 
     def repeat_line(self):
         t = self.player.time

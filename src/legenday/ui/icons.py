@@ -63,6 +63,19 @@ def make_icon(kind: str, color: str = "#e8e8ee", size: int = 64) -> QIcon:
         p.setPen(pen)
         p.drawLine(QPointF(15.5, 9.5), QPointF(20.5, 14.5))
         p.drawLine(QPointF(20.5, 9.5), QPointF(15.5, 14.5))
+    elif kind in ("fullscreen", "fullscreen_exit"):   # quatro cantos: para fora (entrar) ou para dentro (sair)
+        pen = QPen(c, 2.2)
+        pen.setCapStyle(Qt.RoundCap)
+        pen.setJoinStyle(Qt.RoundJoin)
+        p.setPen(pen)
+        p.setBrush(Qt.NoBrush)
+        out = kind == "fullscreen"
+        for cx, cy, dx, dy in ((4, 4, 1, 1), (20, 4, -1, 1), (4, 20, 1, -1), (20, 20, -1, -1)):
+            if out:                                  # canto na borda, braços para dentro
+                p.drawPolyline(_poly((cx, cy + 5 * dy), (cx, cy), (cx + 5 * dx, cy)))
+            else:                                    # canto recuado, braços para fora
+                x, y = cx + 5 * dx, cy + 5 * dy
+                p.drawPolyline(_poly((x - 5 * dx, y), (x, y), (x, y - 5 * dy)))
     elif kind == "sync":                         # relógio: o tempo da legenda
         pen = QPen(c, 1.9)
         pen.setCapStyle(Qt.RoundCap)

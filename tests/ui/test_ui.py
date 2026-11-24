@@ -140,6 +140,25 @@ def test_tour_highlights_each_part_and_keeps_the_card_on_screen(win):
     win._tour.finish()
 
 
+def test_tour_shows_the_translate_line_button_even_without_a_film(qtbot):
+    settings.put("tour_seen", True)
+    w = MainWindow(player=Player(FakeMpv()), sound=FakeSound())      # recém-aberto: sem filme, sem legenda
+    qtbot.addWidget(w)
+    w.resize(1500, 900)
+    w.show()
+    btn = w.subview.btn
+    assert not btn.isVisible()
+    w.start_tour()
+    tour = w._tour
+    i = next(k for k, s in enumerate(tour.steps) if "frase inteira" in s.title)
+    tour.go(i)
+    assert btn.isVisible()
+    spot = btn.geometry().translated(btn.parentWidget().mapTo(w, btn.geometry().topLeft()) - btn.pos())
+    assert tour.hole.contains(spot.center())                     # o destaque cai no botão
+    tour.finish()
+    assert not btn.isVisible()                                   # sem legenda, volta a ficar escondido
+
+
 def test_tour_back_and_escape(qtbot, win):
     win.start_tour()
     tour = win._tour
@@ -192,6 +211,135 @@ def test_donate_dialog_has_a_valid_pix_code(qtbot):
 def test_donate_button_only_appears_with_a_pix_key(win):
     from legenday.branding import PIX_KEY
     assert win.controls.btn_donate.isVisibleTo(win.controls) == bool(PIX_KEY)
+
+
+# ---------------------------------------------------------------- traduzir a frase
+def test_translate_whole_line_button_and_key(qtbot, win, monkeypatch):
+    asked = []
+    monkeypatch.setattr(win.flow, "show", lambda text, pos: asked.append(text))
+    win.subview.request_translation.disconnect()
+    win.subview.request_translation.connect(win.flow.show)
+    at(win, 1.5)
+    btn = win.subview.btn
+    assert btn.isVisible() and btn.text().strip().endswith("Traduzir a frase")
+    btn.click()
+    qtbot.keyClick(win, Qt.Key_F)
+    assert asked == ["You broke my heart.", "You broke my heart."]
+
+
+def test_subtitle_area_does_not_jump_between_lines(qtbot, win):
+    """O botão some entre as falas mas guarda o lugar; a última linha da legenda fica sempre na mesma altura."""
+    win.raw.pause = False
+    sv = win.subview
+
+    def layout_at(t):
+        at(win, t)
+        sv.layout().activate()
+        qtbot.wait(20)
+        bottom = max((w.geometry().bottom() for w in sv.words), default=None)
+        return sv.btn.geometry(), bottom
+
+    btn1, line1 = layout_at(1.5)                 # "You broke my heart."
+    btn_gap, _ = layout_at(2.5)                  # intervalo: sem legenda, botão escondido
+    assert not sv.btn.isVisible()
+    btn2, line2 = layout_at(3.5)                 # "I know."
+    assert btn1 == btn_gap == btn2               # o botão não sai do lugar
+    assert line1 == line2                        # a linha da legenda também não
+
+
+def test_two_line_subtitles_do_not_push_the_controls(qtbot, win):
+    """Fala de 2 linhas e de 1 linha alternando: a barra de controles (e o play) fica parada."""
+    sv, bar = win.subview, win.controls
+
+    def show(text):
+        sv.set_text(text)
+        win.centralWidget().layout().activate()
+        qtbot.wait(20)
+        return bar.geometry().y(), sv.height()
+
+    assert sv.minimumHeight() == sv.maximumHeight()           # altura fixa: o layout não pode encolher o painel
+    one = show("I know.")
+    two = show("Why don't you just admit that you're\nfreaked out by my robot hand?")
+    none = show("")
+    again = show("I know.")
+    assert one == two == none == again
+    # uma fala maior que tudo (3+ linhas) aumenta o painel uma vez, e ele não volta a encolher
+    big = show("One\nTwo\nThree\nFour")
+    assert big[1] >= one[1]
+    assert show("") == big and show("I know.") == big
+
+
+# ---------------------------------------------------------------- pasta do último vídeo
+def test_choose_video_opens_in_the_last_folder_used(qtbot, win, tmp_path, monkeypatch):
+    seen = []
+
+    def fake_dialog(parent, title, start, filters):
+        seen.append((title, start))
+        return "", ""                                   # pessoa cancelou
+    monkeypatch.setattr("legenday.ui.main_window.QFileDialog.getOpenFileName", fake_dialog)
+
+    films = tmp_path / "Filmes" / "Serie"
+    films.mkdir(parents=True)
+    (films / "Ep1.mkv").write_bytes(b"")
+    win.open_video(str(films / "Ep1.mkv"))              # abriu um vídeo desta pasta (pelo arrastar, por exemplo)
+    win.open_video()
+    win.open_subtitle()
+    assert seen == [("Escolher vídeo", str(films)), ("Escolher legenda", str(films))]
+
+    fresh = MainWindow(player=Player(FakeMpv()), sound=FakeSound())   # app aberto de novo: lembra a pasta
+    qtbot.addWidget(fresh)
+    fresh.open_video()
+    assert seen[-1] == ("Escolher vídeo", str(films))
+
+
+def test_without_history_the_video_dialog_never_starts_in_the_program_folder(win, monkeypatch):
+    settings.put("last_video_dir", "C:/pasta/que/sumiu")
+    start = win._video_dir()
+    assert start != "" and "system32" not in start.lower() and os.path.isdir(start)
+
+
+# ---------------------------------------------------------------- tela cheia
+def test_fullscreen_button_and_escape(qtbot, win):
+    btn = win.controls.btn_fullscreen
+    assert btn.isVisible() and "Tela cheia" in btn.toolTip()
+    btn.click()
+    qtbot.waitUntil(win.isFullScreen, timeout=2000)
+    assert "Sair da tela cheia" in btn.toolTip()
+    qtbot.keyClick(win, Qt.Key_Escape)
+    qtbot.waitUntil(lambda: not win.isFullScreen(), timeout=2000)
+    assert "Tela cheia" in btn.toolTip()
+
+
+# ---------------------------------------------------------------- legendas dentro do vídeo
+def test_untagged_embedded_subtitles_pick_the_english_one(qtbot, win, tmp_path):
+    import subprocess
+
+    from legenday.core import embedded
+    ff = embedded.find_ffmpeg()
+    if not ff:
+        pytest.skip("ffmpeg indisponível")
+    def srt(lines, name):
+        path = tmp_path / name
+        path.write_text("".join(f"{i}\n00:00:{i:02d},000 --> 00:00:{i:02d},900\n{t}\n\n"
+                                for i, t in enumerate(lines, 1)), encoding="utf-8")
+        return path
+    pt = srt(["O que você está fazendo aqui?", "Eu não sei do que você está falando.",
+              "Temos que sair deste lugar.", "Não é sua culpa, tá bom?"] * 4, "pt.srt")
+    en = srt(["What are you doing here?", "I don't know what you mean.", "We have to get out of this place.",
+              "It's not your fault, okay?"] * 4, "en.srt")
+    mkv = tmp_path / "baixado" / "Filme.mkv"                    # sem .srt ao lado; faixas sem idioma
+    mkv.parent.mkdir()
+    subprocess.run([ff, "-y", "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=20", "-i", str(pt),
+                    "-i", str(en), "-map", "0:v", "-map", "1:s", "-map", "2:s", "-c:v", "mpeg4", "-c:s", "srt",
+                    str(mkv)], check=True)
+    win.open_video(str(mkv))
+    qtbot.waitUntil(lambda: win._embedded_stream is not None, timeout=20000)
+    assert win._embedded_stream == 2                            # a 2ª legenda (inglês), não a 1ª (português)
+    actions = {a.text(): a for a in win.sub_menu.actions()}
+    assert "Legendas dentro do vídeo:" in actions
+    assert not actions["Legenda 1 · Idioma não informado (não parece inglês)"].isChecked()
+    assert actions["Legenda 2 · Idioma não informado (parece inglês)"].isChecked()
+    assert not any("subrip" in x for x in actions)
 
 
 # ---------------------------------------------------------------- abrir arquivos

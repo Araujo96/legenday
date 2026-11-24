@@ -16,6 +16,10 @@ LANGS = {"eng": "Inglês", "en": "Inglês", "por": "Português", "pt": "Portugu�
          "deu": "Alemão", "de": "Alemão", "ita": "Italiano", "it": "Italiano", "jpn": "Japonês",
          "ja": "Japonês", "kor": "Coreano", "chi": "Chinês", "zho": "Chinês", "rus": "Russo"}
 
+_LANG_TITLES = {"english", "eng", "en", "portuguese", "português", "portugues", "brazilian portuguese",
+                "portuguese (brazil)", "spanish", "español", "french", "german", "italian", "japanese", "korean",
+                "chinese", "russian"}
+
 _STREAM = re.compile(r"^\s*Stream #0:(\d+)(?:\[0x[0-9a-fA-F]+\])?(?:\((\w+)\))?: Subtitle: (\w+)(.*)$")
 
 
@@ -37,10 +41,16 @@ class SubTrack:
 
     @property
     def label(self) -> str:
+        """Nome para o menu, sem termos técnicos: 'Inglês — SDH', 'Idioma não informado'."""
         name = LANGS.get(self.lang, "Idioma não informado" if self.lang == "und" else self.lang.upper())
-        extra = f" — {self.title}" if self.title else ""
-        flag = " [forçada]" if self.forced else ""
-        return f"{name}{extra} ({self.codec}){flag}"
+        redundant = {name.lower(), *_LANG_TITLES}            # título que só repete o idioma não acrescenta nada
+        extra = f" — {self.title}" if self.title and self.title.strip().lower() not in redundant else ""
+        flag = " (só trechos em outra língua)" if self.forced else ""
+        return f"{name}{extra}{flag}"
+
+    @property
+    def unknown_lang(self) -> bool:
+        return self.lang in ("und", "")
 
 
 def find_ffmpeg():
@@ -98,10 +108,38 @@ def probe(video: str) -> list:
     return parse_probe(_run([ff, "-hide_banner", "-i", video], 30).stderr)  # sem saída: ffmpeg sai com erro, é normal
 
 
+def _full(t) -> bool:
+    """Faixa com as falas todas (não só letreiros, músicas ou comentários)."""
+    return t.text and not t.forced and not re.search(r"sign|song|commentary", t.title, re.I)
+
+
 def pick_english(tracks):
-    eng = [t for t in tracks if t.text and t.lang in ("eng", "en")]
-    good = [t for t in eng if not t.forced and not re.search(r"sign|song|commentary", t.title, re.I)]
+    good = [t for t in tracks if t.lang in ("eng", "en") and _full(t)]
     return good[0] if good else None   # só forçadas/placas e letreiros: fica só no menu
+
+
+def unknown_candidates(tracks) -> list:
+    """Faixas sem idioma informado, na ordem do arquivo: podem ser a inglesa (é preciso olhar o texto)."""
+    return [t for t in tracks if t.unknown_lang and _full(t)]
+
+
+# palavras muito comuns em inglês e raras em português/espanhol (sem "a", "e", "o", que existem nas duas)
+_ENGLISH = {"the", "you", "i", "to", "and", "is", "it", "that", "what", "of", "me", "we", "this", "your", "don't",
+            "i'm", "it's", "know", "have", "be", "are", "was", "my", "just", "not", "on", "with", "for", "he",
+            "she", "they", "can", "all", "do", "get", "here", "there", "right", "got", "like", "yeah", "oh"}
+
+
+def looks_english(path, minimum: float = 0.12) -> bool:
+    """Pelo texto da legenda: a fração de palavras muito comuns do inglês (20-40% em inglês, ~0 em português)."""
+    try:
+        raw = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    raw = re.sub(r"<[^>]+>|\{[^}]*\}", " ", raw)                       # tags <i>, {\an8}
+    words = re.findall(r"[a-zà-ÿ]+(?:'[a-z]+)?", raw.lower())
+    if len(words) < 30:
+        return False
+    return sum(w in _ENGLISH for w in words) / len(words) >= minimum
 
 
 def extract(video: str, track: SubTrack, out_dir=None) -> Path:

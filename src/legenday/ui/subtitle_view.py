@@ -1,5 +1,6 @@
 """Painel de legenda com palavras clicáveis (as já salvas no vocabulário ficam destacadas)."""
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import QPoint, Qt, QTimer, Signal
+from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from legenday.core.subtitles import split_chunk
@@ -49,17 +50,25 @@ class SubtitleView(QWidget):
             "QLabel#word:hover{background:#3a3a44;}"
             'QLabel#word[saved="true"]{color:#ffd54a;}'
             'QLabel#word[sel="true"]{background:#ffd54a;color:#111;}'
-            "QPushButton{color:#aaa;background:transparent;border:none;font-size:12px;}"
-            "QPushButton:hover{color:white;}"
+            # "Traduzir a frase": pílula discreta embaixo da legenda, que acende em amarelo ao passar o mouse
+            "QPushButton#full{color:#c8c8d2;background:#202028;border:1px solid #2e2e39;border-radius:13px;"
+            "padding:4px 14px;font-size:13px;}"
+            "QPushButton#full:hover{color:#ffd54a;border-color:#ffd54a;background:#26252a;}"
         )
-        self.setMinimumHeight(120)
         self.is_saved = lambda word: False   # definido pela janela principal
         self.hint_text = ""                    # orientação mostrada quando não há legenda na tela
         self.rows = QVBoxLayout(self)
-        self.btn = QPushButton("🌐 traduzir frase inteira")
+        self.btn = QPushButton("🌐  Traduzir a frase")
+        self.btn.setObjectName("full")
+        self.btn.setToolTip("Traduz a fala inteira (tecla F): bom para gírias e expressões\n"
+                            "que não fazem sentido palavra por palavra")
         self.btn.setCursor(Qt.PointingHandCursor)
         self.btn.setFocusPolicy(Qt.NoFocus)
-        self.btn.clicked.connect(self._on_full)
+        self.btn.clicked.connect(self.translate_full)
+        # escondido entre uma fala e outra, mas sem soltar o lugar: senão a legenda pula a cada fala
+        keep = self.btn.sizePolicy()
+        keep.setRetainSizeWhenHidden(True)
+        self.btn.setSizePolicy(keep)
         self.trans = QLabel()                  # 2ª linha: a fala em português (legenda dupla)
         self.trans.setObjectName("trans")
         self.trans.setWordWrap(True)
@@ -68,8 +77,13 @@ class SubtitleView(QWidget):
         self.words: list[WordLabel] = []
         self._anchor = None
         self._full = ""
+        self._demo = False                     # tour guiado: mostra o botão mesmo sem legenda na tela
+        # Altura fixa (cabe 2 linhas): se o painel crescesse e encolhesse com cada fala, empurraria a barra de
+        # controles e o vídeo para cima e para baixo. Só cresce se aparecer algo maior, e aí não volta a encolher.
+        self._reserved = 0
         self.rows.addStretch()
         self.set_text("")
+        self._grow(self._two_lines_height())
 
     @property
     def full_text(self) -> str:
@@ -119,14 +133,46 @@ class SubtitleView(QWidget):
         self.rows.addWidget(self.trans)
         self.trans.clear()
         self.trans.hide()
-        self.rows.addStretch()
-        self.rows.addWidget(self.btn, alignment=Qt.AlignRight)
-        self.btn.setVisible(bool(text))
+        self.rows.addSpacing(6)
+        # botão fixo embaixo e legenda ancorada logo acima dele (só há espaço livre em cima): a última linha
+        # fica sempre na mesma altura e uma fala de 2 linhas cresce para cima, como nos players de vídeo
+        self.rows.addWidget(self.btn, alignment=Qt.AlignHCenter)
+        self.btn.setVisible(bool(text) or self._demo)
+        QTimer.singleShot(0, self, self._fit)        # mede depois que as palavras novas ganharam a fonte do estilo
+
+    def _two_lines_height(self) -> int:
+        """Altura para 2 linhas de legenda + o botão, calculada pela fonte (26 px), sem esperar a 1ª fala."""
+        font = QFont(self.font())
+        font.setPixelSize(26)
+        line = QFontMetrics(font).height()
+        self.btn.ensurePolished()
+        m = self.rows.contentsMargins()
+        spacing = max(self.rows.spacing(), 6)
+        return m.top() + m.bottom() + 2 * line + 3 * spacing + 6 + self.btn.sizeHint().height()
+
+    def _grow(self, need: int) -> None:
+        """Altura FIXA, que só cresce (nunca encolhe): o painel não muda de tamanho a cada fala e não empurra a
+        barra de controles nem o vídeo. Só uma fala maior que todas as anteriores (3 linhas) aumenta, uma vez."""
+        need = max(need, 120)
+        if need > self._reserved:
+            self._reserved = need
+            self.setFixedHeight(need)
+
+    def _fit(self):
+        self.rows.activate()
+        self._grow(self.rows.minimumSize().height())
+
+    def set_demo(self, on: bool) -> None:
+        """Durante o tour, o botão "Traduzir a frase" aparece mesmo antes de abrir um filme, para ser mostrado."""
+        self._demo = on
+        self.btn.setVisible(on or bool(self._full))
 
     def set_translation(self, text: str) -> None:
         """Mostra (ou esconde, se vazio) a fala em português abaixo da legenda."""
         self.trans.setText(text.replace("\n", " ") if text else "")
         self.trans.setVisible(bool(text) and bool(self.words))
+        if self.trans.isVisibleTo(self):
+            QTimer.singleShot(0, self, self._fit)    # legenda dupla ligada: reserva também a linha em português
 
     def refresh_saved(self):
         """Reavalia quais palavras da legenda atual estão no vocabulário (sem refazer a legenda)."""
@@ -157,6 +203,9 @@ class SubtitleView(QWidget):
             return self.mapToGlobal(QPoint(0, 0)).y()
         return min(w.mapToGlobal(QPoint(0, 0)).y() for w in self.words)
 
-    def _on_full(self):
+    def translate_full(self, *_):
+        """Pop-up com a fala inteira traduzida (botão "Traduzir a frase" ou tecla F)."""
+        if not self._full.strip():
+            return
         x = self.mapToGlobal(QPoint(self.width() // 2, 0)).x()          # centralizado sobre a legenda
         self.request_translation.emit(self._full, QPoint(x, self._text_top()))

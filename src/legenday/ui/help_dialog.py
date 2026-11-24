@@ -51,7 +51,7 @@ use o botão <b>Áudio</b>.</p>
 definição e a <b>fala inteira traduzida</b> (para você saber qual sentido o personagem usou). No 🔊 você ouve a
 pronúncia gravada por uma pessoa de verdade.<br>
 Para uma <b>expressão</b> (como <i>give up</i>), clique na primeira palavra e use <b>Shift + clique</b> na última.
-Para a frase inteira, use <i>traduzir frase inteira</i>, abaixo da legenda.<br>
+Para a frase inteira, use o botão <b>Traduzir a frase</b>, logo abaixo da legenda (ou a tecla <b>F</b>).<br>
 Para continuar assistindo, aperte <b>Espaço</b>, <b>Enter</b> ou <b>Esc</b>.</p>
 
 <h2>4. Guarde e revise o que aprendeu</h2>
@@ -106,7 +106,8 @@ KEYS = (
         (key("Y"), "Alinhar a legenda com a fala: aperte quando ouvir o início de uma frase"),
         (key("P"), "Ligar/desligar o modo repetir frase (pausa no fim de cada fala)"),
         (key("T"), "Ligar/desligar a legenda em português (legenda dupla)"),
-        (key("F11"), "Tela cheia"),
+        (key("F"), "Traduzir a frase inteira (o mesmo que o botão Traduzir a frase)"),
+        (key("F11"), "Tela cheia (ou o botão no canto direito da barra); Esc sai"),
         (key("F1"), "Abrir esta ajuda"),
     ]) + "<h2>Mouse</h2>" + table([
         ("Clique numa palavra", "Traduzir a palavra"),

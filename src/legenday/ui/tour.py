@@ -53,6 +53,10 @@ def steps_for(win) -> list[Step]:
              "<b>Espaço</b> continua o vídeo.<br><br>"
              "Dica: segure <b>Shift</b> e clique em várias palavras para traduzir uma expressão.",
              lambda: [win.subview]),
+        Step("4. Ou traduza a frase inteira",
+             "Gíria ou expressão que não faz sentido palavra por palavra? O botão <b>Traduzir a frase</b>, logo "
+             "abaixo da legenda, mostra a fala toda em português (atalho: tecla <b>F</b>).",
+             lambda: [win.subview.btn]),        # o botão fica à vista durante o tour, mesmo sem filme aberto
         Step("Controles do vídeo",
              "Play e pausa (<b>Espaço</b>), voltar e avançar 10 segundos e ir para a fala anterior ou a próxima.<br>"
              "Não entendeu o que falaram? A fala anterior (tecla <b>R</b>) toca de novo.",

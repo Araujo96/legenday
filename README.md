@@ -138,7 +138,7 @@ python tools/install_argos_model.py
 |---|---|
 | Traduzir palavra | clique nela |
 | Traduzir expressão | clique na 1ª palavra e **Shift+clique** na última |
-| Traduzir a frase toda | botão "traduzir frase inteira" |
+| Traduzir a frase toda | botão **Traduzir a frase** (abaixo da legenda) ou tecla **F** |
 | Ouvir a pronúncia | 🔊 no pop-up |
 | Play/pause (fecha o pop-up) | Espaço ou Enter |
 | Modo repetir frase | botão **Repetir** ou tecla **P** |
@@ -150,7 +150,7 @@ python tools/install_argos_model.py
 | Revisar / exportar vocabulário | botão **Palavras** → **Revisar** (Espaço mostra a resposta, **1** errei, **2** acertei) |
 | Ajustar sincronia da legenda | **G** adianta, **H** atrasa (0,1s); com **Shift**, 1s; ou botões − / + |
 | Alinhar a legenda com a fala | **Y** (quando ouvir o início de uma frase) |
-| Tela cheia | F11 |
+| Tela cheia | botão no canto direito da barra ou **F11** (Esc sai) |
 | Ajuda e atalhos dentro do app | botão **?** ou **F1** |
 
 ## Exportar para o Anki

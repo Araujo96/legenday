@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0
+- **Legenda de dentro do vídeo sem idioma informado agora abre sozinha:** muitos arquivos baixados não dizem o
+  idioma das legendas. Sem faixa marcada como inglês, o app olha o texto das faixas sem idioma e carrega a
+  primeira que parece inglês (faixas marcadas com outro idioma nunca entram sozinhas). Se nenhuma parecer
+  inglês, ele avisa para escolher no botão **Legenda**.
+- **Menu Legenda mais claro:** "Legendas dentro do vídeo:" com "Legenda 1 · Inglês — SDH", sem termos técnicos
+  ("subrip"), ✓ na que está em uso e, nas sem idioma, "(parece inglês)" / "(não parece inglês)".
+- **Botão de tela cheia** no canto direito da barra (antes só pela tecla F11); **Esc** sai da tela cheia.
+- **"Traduzir a frase" ganhou destaque:** virou um botão logo abaixo da legenda, centralizado com ela (antes
+  era um link pequeno no canto), com atalho na tecla **F** e um passo próprio no tour (que mostra o botão
+  mesmo antes de abrir um filme).
+- **A legenda não pula mais:** o botão guarda o lugar entre uma fala e outra, e a legenda fica ancorada
+  embaixo (a última linha sempre na mesma altura; fala de 2 linhas cresce para cima, como nos players).
+  O painel da legenda tem altura fixa (cabe 2 linhas): a barra de controles e o play não sobem e descem mais.
+- **"Escolher vídeo" abre na última pasta usada** (na 1ª vez, na pasta Vídeos), e não mais na pasta do
+  programa (às vezes a system32). "Escolher legenda" abre na pasta do vídeo aberto, e a exportação para o
+  Anki sugere a pasta Documentos.
+
 ## 0.6.2
 - Corrige o tour no Windows: ao clicar em **Vamos lá** / **Próximo**, o cartão novo não aparecia (ficava o
   anterior na tela e só o botão "Próximo" do passo novo) até apertar uma tecla. A sombra do cartão agora é

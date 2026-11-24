@@ -41,6 +41,7 @@ class ControlBar(QFrame):
     show_vocab = Signal()
     show_help = Signal()
     show_donate = Signal()
+    fullscreen_toggled = Signal()
     play_pause = Signal()
     prev_line = Signal()
     next_line = Signal()
@@ -172,6 +173,9 @@ class ControlBar(QFrame):
         self.vol.valueChanged.connect(self._on_volume)
         self._vol_before_mute = 100
         right.addWidget(self.vol)
+        self.btn_fullscreen = self._tool("fullscreen", "Tela cheia (F11) · Esc sai", self.fullscreen_toggled.emit,
+                                         size=20, box=34)
+        right.addWidget(self.btn_fullscreen)
         self.set_sync(0.0)
 
         row = QHBoxLayout()
@@ -179,6 +183,10 @@ class ControlBar(QFrame):
         row.addLayout(center)
         row.addLayout(right, 1)
         col.addLayout(row)
+
+    def set_fullscreen(self, on: bool) -> None:
+        self.btn_fullscreen.setIcon(make_icon("fullscreen_exit" if on else "fullscreen"))
+        self.btn_fullscreen.setToolTip("Sair da tela cheia (F11 ou Esc)" if on else "Tela cheia (F11) · Esc sai")
 
     # ------------------------------------------------------------ fábrica de botões
     @staticmethod

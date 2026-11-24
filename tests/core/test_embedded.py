@@ -26,7 +26,42 @@ def test_parse_probe():
     assert t[0].title == "English SDH" and t[1].forced
     assert [x.text for x in t] == [True, True, False, True]
     assert embedded.pick_english(t) is t[0]
-    assert t[0].label == "Inglês — English SDH (subrip)"
+    assert t[0].label == "Inglês — English SDH"                  # sem "subrip": nada de termo técnico
+    assert t[1].label == "Português (só trechos em outra língua)"
+
+
+def test_label_of_a_track_without_language():
+    assert embedded.SubTrack(2, "und", "subrip").label == "Idioma não informado"
+    assert embedded.SubTrack(2, "eng", "subrip", "English").label == "Inglês"     # título que só repete
+
+
+def test_unknown_language_tracks_are_candidates_but_other_languages_are_not():
+    tracks = [embedded.SubTrack(2, "por", "subrip"), embedded.SubTrack(3, "und", "subrip"),
+              embedded.SubTrack(4, "und", "subrip", "Signs"), embedded.SubTrack(5, "und", "hdmv_pgs_subtitle"),
+              embedded.SubTrack(6, "und", "ass")]
+    assert embedded.pick_english(tracks) is None
+    assert [t.stream for t in embedded.unknown_candidates(tracks)] == [3, 6]
+
+
+def srt_with(lines, tmp_path, name):
+    body = "".join(f"{i}\n00:00:{i:02d},000 --> 00:00:{i:02d},900\n{text}\n\n" for i, text in enumerate(lines, 1))
+    path = tmp_path / name
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+ENGLISH = ["What are you doing here?", "<i>I don't know what you mean.</i>", "We have to get out of this place.",
+           "It's not your fault, okay?", "Tell me the truth.", "Yeah, I know. Just go."] * 3
+PORTUGUESE = ["O que você está fazendo aqui?", "<i>Eu não sei do que você está falando.</i>",
+              "Temos que sair deste lugar.", "Não é sua culpa, tá bom?", "Me conte a verdade.",
+              "É, eu sei. Só vai."] * 3
+
+
+def test_looks_english_tells_english_from_portuguese(tmp_path):
+    assert embedded.looks_english(srt_with(ENGLISH, tmp_path, "en.srt"))
+    assert not embedded.looks_english(srt_with(PORTUGUESE, tmp_path, "pt.srt"))
+    assert not embedded.looks_english(srt_with(["Hi."], tmp_path, "curta.srt"))      # pouco texto: não arrisca
+    assert not embedded.looks_english(tmp_path / "nao-existe.srt")
 
 
 def test_pick_english_none_when_only_other_languages():

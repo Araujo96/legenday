@@ -1,5 +1,7 @@
 """Janela do vocabulário salvo: lista, exclusão e exportação para o Anki."""
-from PySide6.QtCore import Qt, Signal
+from pathlib import Path
+
+from PySide6.QtCore import QStandardPaths, Qt, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -108,7 +110,10 @@ class VocabDialog(QDialog):
             self.changed.emit()
 
     def export(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar para o Anki", "legenday_anki.txt", "Texto (*.txt)")
+        # sugere a pasta Documentos (só o nome do arquivo faria o Windows salvar na pasta do programa)
+        docs = QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation) or str(Path.home())
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar para o Anki", str(Path(docs) / "legenday_anki.txt"),
+                                              "Texto (*.txt)")
         if not path:
             return
         try:
