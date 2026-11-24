@@ -37,7 +37,11 @@ def save(path: str, t: float | None, duration: float | None) -> None:
         if data.pop(key, None) is None:
             return
     else:
-        data[key] = {"t": round(float(t), 1), "dur": round(float(duration or 0), 1), "at": time.time()}
+        # "at" sempre maior que o do anterior: o relógio do Windows anda de 15 em 15 ms, e dois salvamentos
+        # seguidos empatariam (aí o "último vídeo" ficaria ao acaso)
+        newest = max((v.get("at", 0) for v in data.values() if isinstance(v, dict)), default=0)
+        at = max(time.time(), newest + 0.001)
+        data[key] = {"t": round(float(t), 1), "dur": round(float(duration or 0), 1), "at": at}
         if len(data) > MAX_ITEMS:                       # esquece os mais antigos
             for old in sorted(data, key=lambda k: data[k].get("at", 0))[:len(data) - MAX_ITEMS]:
                 data.pop(old)

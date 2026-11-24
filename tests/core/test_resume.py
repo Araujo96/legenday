@@ -40,6 +40,14 @@ def test_last_is_the_most_recent_that_still_exists(tmp_path):
     assert resume.last()[0].endswith("A.mkv")
 
 
+def test_two_saves_in_the_same_clock_tick_keep_their_order(tmp_path, monkeypatch):
+    monkeypatch.setattr(resume.time, "time", lambda: 5000.0)          # relógio parado (como no Windows)
+    a, b = video(tmp_path, "A.mkv"), video(tmp_path, "B.mkv")
+    resume.save(a, 100, 1000)
+    resume.save(b, 200, 1000)
+    assert resume.last()[0].endswith("B.mkv")
+
+
 def test_keeps_only_the_most_recent_videos(tmp_path, monkeypatch):
     monkeypatch.setattr(resume, "MAX_ITEMS", 3)
     paths = [video(tmp_path, f"E{i}.mkv") for i in range(5)]
