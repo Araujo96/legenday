@@ -25,6 +25,7 @@ from legenday.ui.help_dialog import HelpDialog
 from legenday.ui.review_dialog import ReviewDialog
 from legenday.ui.style import main_style
 from legenday.ui.subtitle_view import SubtitleView
+from legenday.ui.tour import Tour
 from legenday.ui.translation_flow import TranslationFlow
 from legenday.ui.vocab_dialog import VocabDialog
 from legenday.ui.workers import TaskRunner
@@ -49,6 +50,7 @@ class MainWindow(QMainWindow):
         self._embedded_error = None
         self._auto_embedded = False
         self._help = None
+        self._tour = None
         self.vocab = VocabStore()
         self.tasks = TaskRunner(self)
         self.shadow = Shadowing()
@@ -94,8 +96,8 @@ class MainWindow(QMainWindow):
         self.timer.start(40)   # ~25 vezes por segundo: a legenda troca no máximo 40 ms depois do mpv
         self.refresh_vocab()
         self._update_hint()
-        if not settings.get("help_seen"):          # primeira vez: mostra a ajuda
-            QTimer.singleShot(600, self._first_run_help)
+        if not settings.get("tour_seen"):          # primeira vez: tour guiado pelos botões
+            QTimer.singleShot(700, self.start_tour)
         else:
             QTimer.singleShot(800, self._announce_reviews)
         self.tasks.run(lookup.warmup)              # lematizador e endereço dos serviços, antes do primeiro clique
@@ -130,11 +132,13 @@ class MainWindow(QMainWindow):
         )
         # Valem na janela principal e no pop-up (que é outra janela), mas não em diálogos como o de
         # vocabulário: lá as setas e o Espaço navegam na tabela em vez de mexer no vídeo.
+        self._shortcuts = []
         for owner in (self, self.popup):
             for key, fn in shortcuts:
                 sc = QShortcut(QKeySequence(key), owner)
                 sc.setContext(Qt.WindowShortcut)
                 sc.activated.connect(fn)
+                self._shortcuts.append(sc)
 
     # ------------------------------------------------------------ helpers
     def _seek(self, amount, ref="absolute", precision="exact"):
@@ -350,12 +354,24 @@ class MainWindow(QMainWindow):
             self._help.raise_()
             self._help.activateWindow()
             return
-        self._help = HelpDialog(self, self.diagnostics())
+        self._help = HelpDialog(self, self.diagnostics(), on_tour=self.start_tour)
         self._help.show()
 
-    def _first_run_help(self):
-        settings.put("help_seen", True)
-        self.show_help()
+    def start_tour(self, *_):
+        """Tour guiado pelos botões (sozinho na primeira vez; depois, pela ajuda)."""
+        if self._tour is not None or not self.isVisible():
+            return
+        self.popup.close()
+        for sc in self._shortcuts:          # durante o tour, setas/Espaço/Enter são do tour, não do vídeo
+            sc.setEnabled(False)
+        self._tour = Tour(self)
+        self._tour.finished.connect(self._tour_done)
+        self._tour.start()
+
+    def _tour_done(self):
+        self._tour = None
+        for sc in self._shortcuts:
+            sc.setEnabled(True)
 
     def _announce_reviews(self):
         try:

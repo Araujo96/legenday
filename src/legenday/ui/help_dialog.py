@@ -29,6 +29,7 @@ def table(rows) -> str:
 
 
 START = """
+<p class="dim">Prefere ver na tela para que serve cada botão? Clique em <b>Ver o tour guiado</b>, aqui embaixo.</p>
 <h2>1. Abra um filme</h2>
 <p class="dim">Em janelas mais estreitas, os botões da barra mostram só o ícone: passe o mouse para ver o nome.</p>
 <p>Clique em <b>Vídeo</b> e escolha o arquivo (MP4, MKV, AVI...), ou <b>arraste o arquivo para a janela</b>.
@@ -146,8 +147,9 @@ ffmpeg (legendas embutidas) e, opcionalmente, Argos Translate (tradução offlin
 
 
 class HelpDialog(QDialog):
-    def __init__(self, parent, diagnostics: str):
+    def __init__(self, parent, diagnostics: str, on_tour=None):
         super().__init__(parent)
+        self._on_tour = on_tour
         self.diagnostics = diagnostics
         self.setWindowTitle(f"Ajuda · {APP_NAME}")
         self.resize(720, 600)
@@ -163,16 +165,25 @@ class HelpDialog(QDialog):
 
         self.copy_btn = QPushButton("Copiar informações para suporte")
         self.copy_btn.clicked.connect(self._copy)
+        self.tour_btn = QPushButton("Ver o tour guiado")
+        self.tour_btn.setObjectName("primary")
+        self.tour_btn.clicked.connect(self._tour)
+        self.tour_btn.setVisible(on_tour is not None)
         close = QPushButton("Fechar")
         close.clicked.connect(self.accept)
         row = QHBoxLayout()
         row.addWidget(self.copy_btn)
         row.addStretch()
+        row.addWidget(self.tour_btn)
         row.addWidget(close)
 
         lay = QVBoxLayout(self)
         lay.addWidget(tabs, 1)
         lay.addLayout(row)
+
+    def _tour(self):
+        self.accept()                 # fecha a ajuda: o tour precisa da janela principal à vista
+        self._on_tour()
 
     def _copy(self):
         QApplication.clipboard().setText(self.diagnostics)

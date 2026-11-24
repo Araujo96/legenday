@@ -68,7 +68,7 @@ class FakeSound:
 
 @pytest.fixture
 def win(qtbot, tmp_path):
-    settings.put("help_seen", True)
+    settings.put("tour_seen", True)
     raw = FakeMpv()
     w = MainWindow(player=Player(raw), sound=FakeSound())
     w.raw = raw
@@ -107,6 +107,57 @@ def drop(win, *paths):
     data.setUrls([QUrl.fromLocalFile(str(p)) for p in paths])
     event = QDropEvent(QPointF(10, 10), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier)
     win.dropEvent(event)
+
+
+# ---------------------------------------------------------------- tour guiado
+def test_first_run_shows_the_tour_once(qtbot):
+    w = MainWindow(player=Player(FakeMpv()), sound=FakeSound())    # pasta de dados nova: nunca viu o tour
+    qtbot.addWidget(w)
+    w.resize(1500, 900)
+    w.show()
+    qtbot.waitUntil(lambda: w._tour is not None and w._tour.isVisible(), timeout=3000)
+    tour = w._tour
+    for _ in tour.steps:                          # seta para a direita até o fim
+        qtbot.keyClick(tour, Qt.Key_Right)
+    assert w._tour is None and not tour.isVisible()
+    assert settings.get("tour_seen") is True
+
+
+def test_tour_highlights_each_part_and_keeps_the_card_on_screen(win):
+    win.start_tour()
+    tour = win._tour
+    assert tour.geometry().size() == win.size()
+    for i, step in enumerate(tour.steps):
+        tour.go(i)
+        card = tour.card.geometry()
+        assert tour.rect().contains(card), step.title                     # cartão inteiro dentro da janela
+        if step.targets():
+            assert not tour.hole.isNull() and tour.rect().contains(tour.hole.center()), step.title
+            assert not card.intersects(tour.hole), step.title             # o cartão não cobre o que explica
+        else:
+            assert tour.hole.isNull()
+    win._tour.finish()
+
+
+def test_tour_back_and_escape(qtbot, win):
+    win.start_tour()
+    tour = win._tour
+    qtbot.keyClick(tour, Qt.Key_Right)
+    qtbot.keyClick(tour, Qt.Key_Right)
+    qtbot.keyClick(tour, Qt.Key_Left)
+    assert tour.i == 1 and tour.back_btn.isVisible()
+    assert not any(sc.isEnabled() for sc in win._shortcuts)    # as setas eram do tour, não do vídeo
+    qtbot.keyClick(tour, Qt.Key_Escape)
+    assert win._tour is None
+    assert all(sc.isEnabled() for sc in win._shortcuts)        # e voltam a ser do vídeo
+
+
+def test_help_can_replay_the_tour(qtbot, win):
+    win.show_help()
+    win._help.tour_btn.click()
+    assert not win._help.isVisible()
+    assert win._tour is not None and win._tour.isVisible()
+    win._tour.finish()
 
 
 # ---------------------------------------------------------------- abrir arquivos

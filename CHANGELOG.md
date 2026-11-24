@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+- **Tour guiado na primeira vez:** a janela escurece e um destaque amarelo passa por cada parte (Vídeo,
+  Legenda, a área da legenda, controles, Repetir/PT, Palavras, sincronia e ajuda), com uma explicação curta em
+  cada passo. Setas ou Enter avançam, Esc pula. Dá para rever pelo botão **?** → **Ver o tour guiado**.
+  Deixa claro, por exemplo, que a legenda aparece embaixo do vídeo, e não em cima.
+- O tour substitui a janela de ajuda que abria sozinha na primeira vez (a ajuda completa continua no **?**).
+
 ## 0.4.0
 
 ### Novidades para estudar

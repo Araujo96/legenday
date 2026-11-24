@@ -106,8 +106,10 @@ class ControlBar(QFrame):
         # centro: frase anterior, -10 s, play, +10 s, próxima frase
         center = QHBoxLayout()
         center.setSpacing(6)
-        center.addWidget(self._tool("prev", "Repetir / frase anterior (R)", self.prev_line.emit))
-        center.addWidget(self._tool("back", "Voltar 10s", lambda: self.skip.emit(-10)))
+        btn_prev = self._tool("prev", "Repetir / frase anterior (R)", self.prev_line.emit)
+        btn_back = self._tool("back", "Voltar 10s", lambda: self.skip.emit(-10))
+        center.addWidget(btn_prev)
+        center.addWidget(btn_back)
         self.btn_play = self._tool("play", "Play / pause (Espaço)", self.play_pause.emit, size=26, box=48, name="play")
         self.btn_play.setIcon(self.icon_play)
         glow = QGraphicsDropShadowEffect(self.btn_play)     # brilho amarelo suave em volta do play
@@ -118,8 +120,11 @@ class ControlBar(QFrame):
         center.addSpacing(4)
         center.addWidget(self.btn_play)
         center.addSpacing(4)
-        center.addWidget(self._tool("fwd", "Avançar 10s", lambda: self.skip.emit(10)))
-        center.addWidget(self._tool("next", "Próxima frase", self.next_line.emit))
+        btn_fwd = self._tool("fwd", "Avançar 10s", lambda: self.skip.emit(10))
+        btn_next = self._tool("next", "Próxima frase", self.next_line.emit)
+        center.addWidget(btn_fwd)
+        center.addWidget(btn_next)
+        self.nav_buttons = [btn_prev, btn_back, self.btn_play, btn_fwd, btn_next]   # o tour destaca o grupo todo
 
         # direita: velocidade  [− | ⏱ +0,0s | +]  volume
         right = QHBoxLayout()
