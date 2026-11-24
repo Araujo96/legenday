@@ -185,6 +185,8 @@ def test_donate_dialog_has_a_valid_pix_code(qtbot):
     dlg.copy_code_btn.click()
     assert QApplication.clipboard().text() == dlg.code
     assert dlg.copy_code_btn.text() == "Copiado ✓"
+    dlg.deleteLater()                                  # fechar logo depois de copiar não pode dar erro
+    qtbot.wait(2200)
 
 
 def test_donate_button_only_appears_with_a_pix_key(win):

@@ -93,4 +93,5 @@ class DonateDialog(QDialog):
     def _copy(text: str, button: QPushButton, label: str):
         QApplication.clipboard().setText(text)
         button.setText("Copiado ✓")
-        QTimer.singleShot(2000, lambda: button.setText(label))
+        # ligado ao botão: se a janela fechar antes dos 2 s, o temporizador é cancelado junto
+        QTimer.singleShot(2000, button, lambda: button.setText(label))
