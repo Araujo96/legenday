@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from legenday import __version__
 from legenday.branding import REPO_URL
+from legenday.services import http
 
 API_URL = "https://api.github.com/repos/" + REPO_URL.split("github.com/", 1)[1] + "/releases/latest"
 DOWNLOAD_URL = REPO_URL + "/releases/latest"
@@ -29,7 +30,7 @@ def _fetch(url: str) -> dict:
         "Accept": "application/vnd.github+json",
         "User-Agent": f"legenDay/{__version__}",      # o GitHub recusa pedidos sem identificação
     })
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+    with http.urlopen(req, timeout=TIMEOUT) as resp:
         return json.load(resp)
 
 

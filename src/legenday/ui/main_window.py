@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 
 from legenday import __version__
 from legenday.branding import APP_NAME
-from legenday.core import audio_tracks, embedded, resume, settings
+from legenday.core import audio_tracks, embedded, log, resume, settings
 from legenday.core.paths import data_dir
 from legenday.core.settings import load_offset, save_offset
 from legenday.core.study import Shadowing
@@ -99,6 +99,8 @@ class MainWindow(QMainWindow):
 
         self.player = player or create_video_player(int(self.video.winId()))
         self.player.set("alang", audio_tracks.PREFERRED_LANGS)   # começa pelo áudio em inglês, se o vídeo tiver
+        # cliques no vídeo: o mpv deixa a janela dele desativada dentro do app, então quem recebe é o Qt
+        self.video.installEventFilter(self)
         self.sound = sound or SoundPlayer()
         self.flow = TranslationFlow(self, self.sound)
         self.popup = self.flow.popup
@@ -259,6 +261,7 @@ class MainWindow(QMainWindow):
         try:
             track = load_subtitles(path)
         except Exception as exc:
+            log.problem(f"abrir legenda {Path(path).name}", exc)
             QMessageBox.warning(self, "Legenda", str(exc))
             return
         track.offset = load_offset(path)
@@ -281,6 +284,7 @@ class MainWindow(QMainWindow):
         try:
             self.dual.set_track(load_subtitles(path), path)
         except Exception as exc:
+            log.problem(f"abrir legenda em português {Path(path).name}", exc)
             QMessageBox.warning(self, "Legenda em português", str(exc))
             return
         self._shown_ids = None
@@ -444,6 +448,9 @@ class MainWindow(QMainWindow):
             f"PySide6 {PySide6.__version__} · {self.player.get('mpv_version', 'mpv ?')}",
             f"ffmpeg: {embedded.find_ffmpeg() or 'não encontrado'}",
             f"Dados: {data_dir()}",
+            "",
+            "Últimos registros (legenday.log):",
+            log.recent() or "(nenhum)",
         ])
 
     def show_help(self, *_):
@@ -555,6 +562,24 @@ class MainWindow(QMainWindow):
 
     def toggle_fullscreen(self, *_):
         self.showNormal() if self.isFullScreen() else self.showFullScreen()
+
+    def eventFilter(self, obj, event):
+        if obj is getattr(self, "video", None) and getattr(event, "button", lambda: None)() == Qt.LeftButton:
+            if event.type() == QEvent.MouseButtonPress:
+                self._on_video_click(False)
+                return True
+            if event.type() == QEvent.MouseButtonDblClick:
+                self._on_video_click(True)
+                return True
+        return super().eventFilter(obj, event)
+
+    def _on_video_click(self, double: bool):
+        """Um clique no vídeo pausa/continua; dois cliques entram ou saem da tela cheia.
+        O primeiro clique do duplo já pausou; o segundo desfaz, e o vídeo segue como estava (igual ao YouTube)."""
+        if self.video_path:
+            self.toggle_pause()
+        if double:
+            self.toggle_fullscreen()
 
     def exit_fullscreen(self):
         if self.isFullScreen():
@@ -674,6 +699,7 @@ class MainWindow(QMainWindow):
         try:
             dlg = VocabDialog(self.vocab, self, on_review=self.show_review)
         except Exception as exc:
+            log.problem("abrir o vocabulário", exc)
             QMessageBox.warning(self, "Vocabulário", f"Não foi possível abrir o vocabulário: {exc}")
             self.player.paused = not was_playing
             return

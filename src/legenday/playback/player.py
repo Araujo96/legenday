@@ -2,6 +2,7 @@
 
 A janela fala com o `Player` (e não com o mpv direto); nos testes, ele recebe um player falso.
 """
+from legenday.core import log
 from legenday.playback.mpv_loader import mpv
 from legenday.services.pronunciation import USER_AGENT
 
@@ -19,8 +20,8 @@ class Player:
     def set(self, name: str, value) -> None:
         try:
             setattr(self.raw, name, value)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.problem(f"mpv: ajustar {name}={value!r}", exc)
 
     @property
     def time(self):
@@ -42,8 +43,8 @@ class Player:
     def seek(self, amount: float, ref: str = "absolute", precision: str = "exact") -> None:
         try:
             self.raw.seek(amount, ref, precision)
-        except Exception:
-            pass
+        except Exception as exc:
+            log.problem(f"mpv: pular para {amount} ({ref})", exc)
 
     def command(self, *args) -> bool:
         try:
@@ -97,7 +98,8 @@ class SoundPlayer:
                 self._raw = self._factory()
             self._raw.play(url)
             return True
-        except Exception:
+        except Exception as exc:
+            log.problem("pronúncia: tocar o áudio", exc)
             return False
 
     def terminate(self) -> None:

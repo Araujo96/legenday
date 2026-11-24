@@ -79,6 +79,7 @@ class TranslationPopup(QFrame):
         self._anchor, self._result, self._saved_label = anchor, None, None
         self._set_head(term)
         self.sound_btn.hide()
+        self.sound_loading(False)          # outra palavra: o botão volta ao normal
         self.pt.setText("<span style='color:#9a9aa6'>Traduzindo…</span>")
         self.extra.setVisible(False)
         self.save_btn.setText("☆  Salvar no vocabulário")
@@ -134,6 +135,14 @@ class TranslationPopup(QFrame):
     def _on_save(self):
         if self._result is not None:
             self.save_requested.emit(self._result)
+
+    def sound_loading(self, on: bool):
+        self.sound_btn.setText("…" if on else "🔊")
+        self.sound_btn.setToolTip("Baixando o áudio…" if on else "Ouvir a pronúncia")
+
+    def sound_failed(self):
+        self.sound_btn.setText("🔇")
+        self.sound_btn.setToolTip("Não deu para baixar o áudio agora. Clique para tentar de novo.")
 
     def _on_sound(self):
         if self._result is not None and getattr(self._result, "audio", ""):

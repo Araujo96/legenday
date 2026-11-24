@@ -5,7 +5,7 @@ from PySide6.QtCore import QObject, QPoint
 
 from legenday.core.lemma import lemma_of
 from legenday.core.vocab import make_key
-from legenday.services import lookup
+from legenday.services import lookup, pronunciation
 from legenday.ui.popup import TranslationPopup
 
 
@@ -19,7 +19,7 @@ class TranslationFlow(QObject):
         self.popup = TranslationPopup()
         self.popup.closed.connect(self._closed)
         self.popup.save_requested.connect(self._save)
-        self.popup.play_requested.connect(self.sound.play)
+        self.popup.play_requested.connect(self.play)
         self._req = 0
         self._resume = False
         self._cur = None               # resultado da etapa 1 (tradução)
@@ -27,6 +27,18 @@ class TranslationFlow(QObject):
         self._pending = False
         self._context = ""
         self.vocab_keys = set()
+
+    # ------------------------------------------------------------ pronúncia
+    def play(self, url: str) -> None:
+        """Toca o áudio já baixado (a consulta da palavra adianta o download); se faltar, baixa agora."""
+        self.popup.sound_loading(True)
+        self.win.tasks.run(lambda: pronunciation.local_file(url), self._on_audio)
+
+    def _on_audio(self, path) -> None:
+        if isinstance(path, Exception) or not self.sound.play(str(path)):
+            self.popup.sound_failed()
+        else:
+            self.popup.sound_loading(False)
 
     # ------------------------------------------------------------ pop-up
     def show(self, text: str, anchor: QPoint) -> None:

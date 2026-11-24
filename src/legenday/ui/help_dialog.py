@@ -98,7 +98,8 @@ Legendas em imagem (PGS/VobSub) não são suportadas.</li>
 
 KEYS = (
     "<h2>Teclado</h2>" + table([
-        (key("Espaço", "Enter"), "Pausar / continuar. Com o pop-up aberto, fecha o pop-up e continua o vídeo"),
+        (key("Espaço", "Enter"), "Pausar / continuar (ou um clique no vídeo). Com o pop-up aberto, "
+                                     "fecha o pop-up e continua o vídeo"),
         (key("Esc"), "Fechar o pop-up"),
         (key("R"), "Repetir a frase atual"),
         (key("←", "→"), "Voltar / avançar 5 segundos"),
@@ -107,7 +108,7 @@ KEYS = (
         (key("P"), "Ligar/desligar o modo repetir frase (pausa no fim de cada fala)"),
         (key("T"), "Ligar/desligar a legenda em português (legenda dupla)"),
         (key("F"), "Traduzir a frase inteira (o mesmo que o botão Traduzir a frase)"),
-        (key("F11"), "Tela cheia (ou o botão no canto direito da barra); Esc sai"),
+        (key("F11"), "Tela cheia (ou dois cliques no vídeo, ou o botão no canto direito da barra); Esc sai"),
         (key("F1"), "Abrir esta ajuda"),
     ]) + "<h2>Mouse</h2>" + table([
         ("Clique numa palavra", "Traduzir a palavra"),
@@ -133,11 +134,15 @@ def about_html(diagnostics: str) -> str:
 <h2>Privacidade</h2>
 <p>Seus filmes e legendas ficam no seu computador e nunca são enviados. Para traduzir, o texto que você clica é
 enviado ao serviço gratuito <b>MyMemory</b> (a menos que o modelo offline esteja instalado), a palavra ao
-dicionário online <b>Free Dictionary API</b> e ao <b>Wikimedia Commons</b> (de onde vêm as gravações de pronúncia).
+dicionário online <b>Free Dictionary API</b> e ao <b>Wikimedia Commons</b> e ao <b>Wiktionary</b> (de onde vêm as
+gravações de pronúncia, guardadas no seu computador depois de ouvidas).
 Com a legenda dupla ligada e sem legenda em português, cada fala também vai para o MyMemory.
 Ao abrir, o app pergunta ao <b>GitHub</b> qual é a versão mais nova, para avisar quando houver atualização
 (nada seu é enviado nessa consulta).
-Suas palavras salvas ficam só no seu computador.</p>
+Suas palavras salvas ficam só no seu computador.
+Se algo der errado, o app anota o erro no arquivo <code>legenday.log</code>, na pasta de dados (também só no seu
+computador); as últimas linhas entram no botão <b>Copiar informações para suporte</b>, para você mandar a quem
+for ajudar.</p>
 
 <h2>Feito com</h2>
 <p>mpv (reprodução), Qt/PySide6 (interface), pysubs2 (legendas), simplemma (forma base das palavras),

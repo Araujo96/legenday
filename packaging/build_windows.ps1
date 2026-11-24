@@ -1,4 +1,4 @@
-# Gera o executável do legenDay no SEU Windows (sem GitHub).
+﻿# Gera o executável do legenDay no SEU Windows (sem GitHub).
 # Antes: coloque libs\libmpv-2.dll (e, opcional, libs\ffmpeg.exe) e rode no PowerShell, na raiz do projeto:
 #   powershell -ExecutionPolicy Bypass -File packaging\build_windows.ps1
 $ErrorActionPreference = "Stop"
@@ -6,10 +6,18 @@ Set-Location (Join-Path $PSScriptRoot "..")
 
 if (-not (Test-Path "libs\libmpv-2.dll")) { throw "Coloque o libmpv-2.dll na pasta libs\ antes de gerar o executavel (veja libs\README.md)." }
 
-python -m venv .venv-build
-& .\.venv-build\Scripts\python.exe -m pip install --upgrade pip
-& .\.venv-build\Scripts\python.exe -m pip install . pyinstaller
-& .\.venv-build\Scripts\python.exe -m PyInstaller packaging\legenday.spec --noconfirm
+# Com o legenDay aberto, o Windows nao deixa substituir o programa e o executavel antigo ficaria no lugar.
+if (Get-Process legenDay -ErrorAction SilentlyContinue) { throw "Feche o legenDay antes de gerar o executavel." }
+
+# $ErrorActionPreference nao vale para programas externos: confere o codigo de saida de cada um
+function Invoke-Step($what, [scriptblock]$cmd) {
+    & $cmd
+    if ($LASTEXITCODE -ne 0) { throw "Falhou: $what (codigo $LASTEXITCODE)" }
+}
+Invoke-Step "criar o ambiente" { python -m venv .venv-build }
+Invoke-Step "atualizar o pip" { & .\.venv-build\Scripts\python.exe -m pip install --upgrade pip }
+Invoke-Step "instalar o app" { & .\.venv-build\Scripts\python.exe -m pip install . pyinstaller }
+Invoke-Step "PyInstaller" { & .\.venv-build\Scripts\python.exe -m PyInstaller packaging\legenday.spec --noconfirm }
 
 $p = Start-Process "dist\legenDay\legenDay.exe" -ArgumentList "--selftest" -Wait -PassThru
 Get-Content "dist\legenDay\selftest.txt"

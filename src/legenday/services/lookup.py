@@ -102,7 +102,7 @@ def _first_audio(pronounce, words) -> str:
 
 
 def details(text: str, context: str = "", *, translate=translator.senses, define=dictionary.lookup,
-            lemmatize=lemma.lemma_of, pronounce=pronunciation.find_audio) -> Details:
+            lemmatize=lemma.lemma_of, pronounce=pronunciation.find_and_download) -> Details:
     """Etapa 2, tudo em paralelo: fala inteira traduzida (contexto) e, para palavra isolada, forma base
     traduzida, dicionário e pronúncia. Falhas aqui nunca atrapalham a tradução."""
     text = _norm(text)

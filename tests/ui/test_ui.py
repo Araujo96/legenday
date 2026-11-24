@@ -1,12 +1,13 @@
 """Testes da interface (pytest-qt), com um player falso no lugar do mpv."""
 import os
+from pathlib import Path
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 pytest.importorskip("pytestqt")
 
-from PySide6.QtCore import QMimeData, QPointF, Qt, QUrl  # noqa: E402
+from PySide6.QtCore import QEvent, QMimeData, QPointF, Qt, QUrl  # noqa: E402
 from PySide6.QtGui import QDropEvent  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
@@ -343,6 +344,21 @@ def test_closing_the_app_remembers_where_it_stopped(qtbot, win, tmp_path):
     assert resume.get(str(tmp_path / "Filme.mkv"))[0] == 45.0
 
 
+# ---------------------------------------------------------------- informações para suporte
+def test_support_info_includes_the_recent_log(win):
+    assert "Últimos registros (legenday.log):\n(nenhum)" in win.diagnostics()
+    from legenday.core import log
+    log.setup()
+    try:
+        log.problem("tarefa de teste", ConnectionError("sem internet"))
+        assert "tarefa de teste: ConnectionError('sem internet')" in win.diagnostics()
+    finally:
+        for handler in list(log.log.handlers):
+            log.log.removeHandler(handler)
+            handler.close()
+        log.log.addHandler(log.logging.NullHandler())
+
+
 # ---------------------------------------------------------------- tela cheia
 def test_fullscreen_button_and_escape(qtbot, win):
     btn = win.controls.btn_fullscreen
@@ -353,6 +369,34 @@ def test_fullscreen_button_and_escape(qtbot, win):
     qtbot.keyClick(win, Qt.Key_Escape)
     qtbot.waitUntil(lambda: not win.isFullScreen(), timeout=2000)
     assert "Tela cheia" in btn.toolTip()
+
+
+def test_click_on_video_pauses_and_double_click_goes_fullscreen(qtbot, win, monkeypatch):
+    """O mpv deixa a janela dele desativada dentro do app: o clique chega na área de vídeo do Qt."""
+    toggled = []
+    monkeypatch.setattr(win, "toggle_fullscreen", lambda: toggled.append(1))   # a tela cheia já tem teste próprio
+    win.player.paused = False
+    qtbot.mouseClick(win.video, Qt.LeftButton)
+    assert win.player.paused
+    qtbot.mouseClick(win.video, Qt.LeftButton)
+    assert not win.player.paused
+    qtbot.mouseClick(win.video, Qt.RightButton)           # botão direito não mexe no vídeo
+    assert not win.player.paused
+    # o Windows manda: aperta, solta, "duplo" (no lugar do 2º aperto), solta
+    from PySide6.QtGui import QMouseEvent
+    qtbot.mouseClick(win.video, Qt.LeftButton)            # 1º clique pausa...
+    assert win.player.paused
+    pos = QPointF(20, 20)
+    QApplication.sendEvent(win.video, QMouseEvent(QEvent.MouseButtonDblClick, pos, win.video.mapToGlobal(pos),
+                                                  Qt.LeftButton, Qt.LeftButton, Qt.NoModifier))
+    assert toggled == [1] and not win.player.paused       # ...o duplo desfaz e põe em tela cheia
+
+
+def test_click_without_video_does_not_pause(qtbot, win):
+    win.video_path = None
+    win.player.paused = True
+    win._on_video_click(False)
+    assert win.player.paused
 
 
 # ---------------------------------------------------------------- legendas dentro do vídeo
@@ -443,8 +487,29 @@ def test_pronunciation_button_plays_audio(qtbot, win, monkeypatch):
     at(win, 1.5)
     click_word(qtbot, win, "broke")
     qtbot.waitUntil(lambda: win.popup.sound_btn.isVisible(), timeout=3000)
+    from legenday.services import pronunciation
+    asked = []
+    monkeypatch.setattr(pronunciation, "local_file", lambda url: asked.append(url) or Path("C:/audio/broke-us.mp3"))
     qtbot.mouseClick(win.popup.sound_btn, Qt.LeftButton)
-    assert win.sound.played == ["https://x/broke-us.mp3"]
+    qtbot.waitUntil(lambda: bool(win.sound.played), timeout=3000)
+    assert asked == ["https://x/broke-us.mp3"]
+    assert win.sound.played == [str(Path("C:/audio/broke-us.mp3"))]       # toca o arquivo baixado
+    assert win.popup.sound_btn.text() == "🔊"
+
+
+def test_pronunciation_button_shows_when_audio_cannot_be_downloaded(qtbot, win, monkeypatch):
+    fake_lookup(monkeypatch)
+    at(win, 1.5)
+    click_word(qtbot, win, "broke")
+    qtbot.waitUntil(lambda: win.popup.sound_btn.isVisible(), timeout=3000)
+    from legenday.services import pronunciation
+
+    def busy(url):
+        raise OSError("HTTP Error 429: Too Many Requests")
+    monkeypatch.setattr(pronunciation, "local_file", busy)
+    qtbot.mouseClick(win.popup.sound_btn, Qt.LeftButton)
+    qtbot.waitUntil(lambda: win.popup.sound_btn.text() == "🔇", timeout=3000)
+    assert win.sound.played == [] and "tentar de novo" in win.popup.sound_btn.toolTip()
 
 
 def test_save_word_highlights_it_and_records_the_line_start(qtbot, win, monkeypatch):

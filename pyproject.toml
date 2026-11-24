@@ -15,6 +15,7 @@ dependencies = [
     "pysubs2>=1.6",
     "simplemma>=1.0",
     "segno>=1.6",
+    "certifi>=2024.2",              # autoridades HTTPS além das do Windows (veja services/http.py)
 ]
 
 [project.optional-dependencies]

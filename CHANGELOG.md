@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.1
+- **Pronúncia mais confiável:** o servidor de áudio do Wikimedia às vezes recusava o arquivo ("pedidos demais"),
+  e o botão 🔊 aparecia mas ficava mudo. Agora o app baixa o áudio quando a palavra é consultada, tenta de novo se
+  o servidor estiver ocupado e guarda o arquivo no computador (a mesma palavra toca na hora, até sem internet). Se
+  mesmo assim falhar, o botão vira 🔇 e avisa para tentar de novo. O app também se identifica para o Wikimedia
+  com o link do projeto, como a política deles pede.
+- **Mais palavras com pronúncia:** quando não existe a gravação no padrão "En-us-palavra.ogg", o app procura as
+  que o Wiktionary usa: "the" (a forma átona, como se fala na frase), "I'm", "hiker" (do Lingua Libre) e outras.
+- **Clique no vídeo:** um clique pausa ou continua; dois cliques entram ou saem da tela cheia (os botões
+  continuam lá).
+- **Registro de erros:** problemas ficam anotados em `legenday.log`, na pasta de dados (só no computador da
+  pessoa, até 512 KB). O botão **Copiar informações para suporte**, na ajuda, inclui as últimas linhas, para dar
+  para descobrir o que deu errado no PC de outra pessoa. Erros não tratados também entram no registro.
+- Imagens do README e o vídeo de demonstração refeitos com a interface atual, com prints novos do tour guiado e
+  de "continuar de onde parou".
+- Corrige "continuar de onde parou" escolhendo o vídeo errado quando dois eram salvos no mesmo instante.
+
 ## 0.8.0
 - **Continuar de onde parou:** o app guarda onde cada vídeo parou (ao pausar, ao trocar de vídeo, ao fechar e
   a cada 10 s, então vale até se o PC desligar). Ao abrir o app, pergunta "Continuar assistindo?" com o nome

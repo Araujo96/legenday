@@ -13,14 +13,15 @@ cada um em arquivos separados dentro da pasta do programa (`_internal`), o que p
 | pysubs2 | leitura de legendas | MIT | https://github.com/tkarabela/pysubs2 |
 | simplemma | forma base das palavras | MIT | https://github.com/adbar/simplemma |
 | segno | QR Code do PIX (doações) | BSD-3-Clause | https://github.com/heuer/segno |
+| certifi | autoridades certificadoras para HTTPS (sem modificações) | MPL-2.0 | https://github.com/certifi/python-certifi |
 | Python | linguagem | PSF License | https://www.python.org |
 | PyInstaller | geração do executável | GPL-2.0+ com exceção que não afeta os programas gerados | https://github.com/pyinstaller/pyinstaller |
 
 \* O arquivo `libmpv-2.dll` incluído vem de uma build de terceiros. Confira a licença da build usada ao redistribuí-la.
 
 Serviços online usados durante o uso do app (nada disso vai dentro do pacote): MyMemory (tradução),
-Free Dictionary API (definições) e Wikimedia Commons (gravações de pronúncia, tocadas direto de lá, sob a licença
-livre de cada arquivo). Veja a aba **Sobre** da ajuda para a nota de privacidade.
+Free Dictionary API (definições) e Wikimedia Commons / Wiktionary (gravações de pronúncia, baixadas quando a
+palavra é consultada, sob a licença livre de cada arquivo). Veja a aba **Sobre** da ajuda para a nota de privacidade.
 
 As imagens e o vídeo de demonstração em `docs/` mostram cenas de *Tears of Steel* (CC BY 3.0) © Blender Foundation,
 mango.blender.org.

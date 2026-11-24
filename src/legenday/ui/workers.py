@@ -6,6 +6,8 @@
 """
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 
+from legenday.core import log
+
 
 class TaskRunner(QObject):
     _finished = Signal(int, object)
@@ -40,6 +42,7 @@ class _Task(QRunnable):
         try:
             result = self.fn()
         except Exception as exc:
+            log.problem(f"tarefa em segundo plano ({getattr(self.fn, '__qualname__', 'função')})", exc)
             result = exc
         try:
             self.runner._finished.emit(self.task_id, result)

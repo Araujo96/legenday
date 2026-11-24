@@ -9,6 +9,7 @@ import urllib.request
 
 from legenday import __version__
 from legenday.core.paths import db
+from legenday.services import http
 
 _SCHEMA = "CREATE TABLE IF NOT EXISTS translations (src TEXT PRIMARY KEY, pt TEXT)"
 
@@ -138,7 +139,7 @@ def _mymemory_senses(text: str) -> list:
         {"q": text, "langpair": "en|pt-BR"}
     )
     req = urllib.request.Request(url, headers={"User-Agent": f"legenDay/{__version__}"})
-    with urllib.request.urlopen(req, timeout=8) as resp:
+    with http.urlopen(req, timeout=8) as resp:
         data = json.load(resp)
     if str(data.get("responseStatus")) != "200":
         raise RuntimeError(data.get("responseDetails", "erro na tradução"))

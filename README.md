@@ -46,9 +46,13 @@ ouvindo de novo a cena em que cada uma apareceu.
 
 **Player**
 - Baseado no [mpv](https://mpv.io): toca praticamente qualquer formato (MP4, MKV, AVI, WebM...).
-- **Legendas embutidas:** lê as legendas de dentro do MKV/MP4 (precisa do ffmpeg, veja abaixo).
+- **Legendas embutidas:** lê as legendas de dentro do MKV/MP4 e, sem faixa marcada como inglês, descobre pelo
+  texto qual é a inglesa (o programa baixado já traz o ffmpeg; rodando pelo código, veja abaixo).
 - **Escolha do áudio:** em vídeos dublados, começa pelo áudio em inglês e deixa trocar no botão **Áudio**.
 - **Ajuste de sincronia** da legenda, lembrado para cada arquivo, e alinhamento com a fala numa tecla.
+- **Continue de onde parou:** o app lembra onde cada vídeo parou e pergunta se quer continuar.
+- **Fácil para quem nunca usou:** tour guiado na primeira vez, arrastar e soltar vídeo e legenda, e aviso quando
+  sai uma versão nova.
 - Barra de tempo clicável, pular 10s, repetir/voltar frase, velocidade, volume e tela cheia.
 
 Tradução offline ([Argos Translate](https://github.com/argosopentech/argos-translate), opcional) ou online gratuita
@@ -63,6 +67,7 @@ Tudo com cache local em SQLite: a segunda consulta é instantânea.
 | ![Legenda dupla](docs/screenshots/09_legenda_dupla.jpg) | ![Modo repetir frase](docs/screenshots/10_repetir.jpg) |
 | ![Revisão com a cena do filme](docs/screenshots/11_revisao.jpg) | ![Vocabulário e Anki](docs/screenshots/07_vocabulario.jpg) |
 | ![Frase inteira](docs/screenshots/04_frase.jpg) | ![Ajuste de sincronia](docs/screenshots/06_sincronia.jpg) |
+| ![Tour guiado na primeira vez](docs/screenshots/12_tour.jpg) | ![Continue de onde parou](docs/screenshots/13_continuar.jpg) |
 
 <sub>Cenas de <a href="https://mango.blender.org">Tears of Steel</a> (CC BY 3.0) © Blender Foundation | mango.blender.org.</sub>
 
@@ -140,7 +145,7 @@ python tools/install_argos_model.py
 | Traduzir expressão | clique na 1ª palavra e **Shift+clique** na última |
 | Traduzir a frase toda | botão **Traduzir a frase** (abaixo da legenda) ou tecla **F** |
 | Ouvir a pronúncia | 🔊 no pop-up |
-| Play/pause (fecha o pop-up) | Espaço ou Enter |
+| Play/pause (fecha o pop-up) | Espaço, Enter ou um clique no vídeo |
 | Modo repetir frase | botão **Repetir** ou tecla **P** |
 | Legenda dupla (português embaixo) | botão **PT** ou tecla **T** |
 | Repetir frase / frase anterior | botão de frase anterior ou tecla **R** |
@@ -150,7 +155,7 @@ python tools/install_argos_model.py
 | Revisar / exportar vocabulário | botão **Palavras** → **Revisar** (Espaço mostra a resposta, **1** errei, **2** acertei) |
 | Ajustar sincronia da legenda | **G** adianta, **H** atrasa (0,1s); com **Shift**, 1s; ou botões − / + |
 | Alinhar a legenda com a fala | **Y** (quando ouvir o início de uma frase) |
-| Tela cheia | botão no canto direito da barra ou **F11** (Esc sai) |
+| Tela cheia | dois cliques no vídeo, botão no canto direito da barra ou **F11** (Esc sai) |
 | Ajuda e atalhos dentro do app | botão **?** ou **F1** |
 
 ## Exportar para o Anki
@@ -218,5 +223,5 @@ O CI roda o lint e os testes no Linux e no Windows, em Python 3.10 e 3.12.
 [MIT](LICENSE). O app usa PySide6 (LGPL), mpv/libmpv (LGPL/GPL conforme o build) e pysubs2 (MIT).
 O libmpv não é distribuído neste repositório; o pacote para Windows o inclui junto (veja
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) para os componentes de terceiros e suas licenças).
-As gravações de pronúncia vêm do Wikimedia Commons, sob as licenças livres de cada arquivo, e são tocadas
-direto de lá (não fazem parte do app).
+As gravações de pronúncia vêm do Wikimedia Commons (achadas também pelo Wiktionary), sob as licenças livres de
+cada arquivo. São baixadas quando a palavra é consultada e guardadas na pasta de dados (não fazem parte do app).

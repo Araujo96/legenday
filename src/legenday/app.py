@@ -4,11 +4,14 @@ Atalhos: Espaço/Enter = play/pause (e fecha o pop-up) | R = repetir frase | ←
 Clique = traduz a palavra | Shift+clique = estende a seleção (expressão)
 """
 import locale
+import platform
 import sys
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from legenday import __version__
 from legenday.branding import APP_NAME, app_icon, set_windows_app_id
+from legenday.core import log
 from legenday.playback.mpv_loader import MPV_ERROR, mpv
 from legenday.ui.main_window import MainWindow
 
@@ -93,12 +96,15 @@ def main(argv=None) -> int:
     argv = sys.argv if argv is None else argv
     if "--selftest" in argv:
         return selftest()
+    log.setup()
+    log.log.info("%s %s aberto (%s)", APP_NAME, __version__, platform.platform())
     set_windows_app_id()
     app = QApplication(argv)
     app.setApplicationName(APP_NAME)
     app.setWindowIcon(app_icon())
     locale.setlocale(locale.LC_NUMERIC, "C")  # exigido pelo libmpv
     if mpv is None:
+        log.log.error("libmpv não encontrado: %s", MPV_ERROR)
         QMessageBox.critical(
             None, "libmpv não encontrado",
             "Coloque o arquivo libmpv-2.dll na pasta libs/ do projeto (veja o README).\n\n" + str(MPV_ERROR))

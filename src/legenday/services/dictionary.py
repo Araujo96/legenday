@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass, field
 
 from legenday import __version__
 from legenday.core.paths import db
+from legenday.services import http
 
 API = "https://api.dictionaryapi.dev/api/v2/entries/en/"
 _SCHEMA = "CREATE TABLE IF NOT EXISTS dictionary (word TEXT PRIMARY KEY, data TEXT)"
@@ -45,7 +46,7 @@ def parse(payload) -> "Entry | None":
 
 def _fetch(word: str):
     req = urllib.request.Request(API + urllib.parse.quote(word), headers={"User-Agent": f"legenDay/{__version__}"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+    with http.urlopen(req, timeout=TIMEOUT) as resp:
         return json.load(resp)
 
 
