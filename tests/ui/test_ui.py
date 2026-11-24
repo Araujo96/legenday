@@ -298,6 +298,51 @@ def test_without_history_the_video_dialog_never_starts_in_the_program_folder(win
     assert start != "" and "system32" not in start.lower() and os.path.isdir(start)
 
 
+# ---------------------------------------------------------------- continuar de onde parou
+def test_reopening_a_half_watched_video_offers_to_continue(qtbot, win, tmp_path, monkeypatch):
+    from legenday.core import resume
+    asked = []
+    monkeypatch.setattr("legenday.ui.main_window.ResumeDialog.ask",
+                        lambda parent, path, at, dur, on_start=False: asked.append((at, on_start)) or True)
+    film = tmp_path / "Serie" / "Ep2.mkv"
+    film.parent.mkdir()
+    film.write_bytes(b"")
+    win.open_video(str(film))
+    win.raw.time_pos, win.raw.duration = 61.0, 100.0
+    win.save_position()                                  # assistiu até 1:01 e parou
+    win.open_video(str(tmp_path / "Filme.mkv"))          # foi para outro vídeo...
+    win.open_video(str(film))                            # ...e voltou: pergunta
+    assert asked == [(61.0, False)]
+    win._tick()                                          # o vídeo carregou: pula para 3 s antes de onde parou
+    assert win.raw.time_pos == 58.0
+    assert resume.get(str(film))[0] == 61.0              # e o ponto salvo não foi apagado pelo pulo
+
+
+def test_app_start_offers_the_last_half_watched_video(qtbot, tmp_path, monkeypatch):
+    from legenday.core import resume
+    settings.put("tour_seen", True)
+    film = tmp_path / "Filme.mkv"
+    film.write_bytes(b"")
+    resume.save(str(film), 2533.0, 6300.0)
+    asked = []
+    monkeypatch.setattr("legenday.ui.main_window.ResumeDialog.ask",
+                        lambda parent, path, at, dur, on_start=False: asked.append((path, at, on_start)) or True)
+    raw = FakeMpv()
+    w = MainWindow(player=Player(raw), sound=FakeSound())
+    qtbot.addWidget(w)
+    w.show()
+    qtbot.waitUntil(lambda: bool(asked), timeout=3000)
+    assert asked == [(str(film.resolve()), 2533.0, True)]
+    assert raw.played == [str(film.resolve())]
+
+
+def test_closing_the_app_remembers_where_it_stopped(qtbot, win, tmp_path):
+    from legenday.core import resume
+    win.raw.time_pos, win.raw.duration = 45.0, 100.0
+    win.close()
+    assert resume.get(str(tmp_path / "Filme.mkv"))[0] == 45.0
+
+
 # ---------------------------------------------------------------- tela cheia
 def test_fullscreen_button_and_escape(qtbot, win):
     btn = win.controls.btn_fullscreen

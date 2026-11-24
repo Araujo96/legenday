@@ -3,6 +3,7 @@
 As partes ficam em módulos próprios: controls (barra), translation_flow (pop-up e vocabulário),
 dual (legenda em português), study (modo repetir frase e revisão) e player (acesso protegido ao mpv).
 """
+import time
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QStandardPaths, Qt, QTimer, QUrl
@@ -20,7 +21,7 @@ from PySide6.QtWidgets import (
 
 from legenday import __version__
 from legenday.branding import APP_NAME
-from legenday.core import audio_tracks, embedded, settings
+from legenday.core import audio_tracks, embedded, resume, settings
 from legenday.core.paths import data_dir
 from legenday.core.settings import load_offset, save_offset
 from legenday.core.study import Shadowing
@@ -32,6 +33,7 @@ from legenday.ui.controls import COMPACT_BELOW, ControlBar
 from legenday.ui.donate_dialog import DonateDialog
 from legenday.ui.dual import DualSubtitles
 from legenday.ui.help_dialog import HelpDialog
+from legenday.ui.resume_dialog import ResumeDialog
 from legenday.ui.review_dialog import ReviewDialog
 from legenday.ui.style import main_style
 from legenday.ui.subtitle_view import SubtitleView
@@ -41,6 +43,7 @@ from legenday.ui.vocab_dialog import VocabDialog
 from legenday.ui.workers import TaskRunner
 
 SUB_FILTER = "Legendas (*.srt *.ass *.ssa *.vtt);;Todos (*)"
+SAVE_EVERY = 10   # s: de quanto em quanto tempo guarda onde o vídeo está ("continuar de onde parou")
 
 
 class MainWindow(QMainWindow):
@@ -61,6 +64,8 @@ class MainWindow(QMainWindow):
         self._auto_embedded = False
         self._embedded_stream = None   # faixa de dentro do vídeo em uso (✓ no menu Legenda)
         self._guessed = {}             # faixa sem idioma -> o texto parece inglês? (para o nome no menu)
+        self._pending_seek = None      # "continuar de onde parou": pula para cá quando o vídeo carregar
+        self._last_saved = 0.0
         self._help = None
         self._tour = None
         self.vocab = VocabStore()
@@ -112,6 +117,7 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(700, self.start_tour)
         else:
             QTimer.singleShot(800, self._announce_reviews)
+            QTimer.singleShot(500, self._offer_resume)    # o último vídeo ficou pela metade?
         self.tasks.run(lookup.warmup)              # lematizador e endereço dos serviços, antes do primeiro clique
         self.update_btn = None
         self.tasks.run(updates.check, self._on_update_check)   # saiu versão nova no GitHub?
@@ -207,7 +213,9 @@ class MainWindow(QMainWindow):
             return str(Path(self.video_path).parent)
         return self._video_dir()
 
-    def open_video(self, path: str | bool = False):
+    def open_video(self, path: str | bool = False, resume_at: float | None = None):
+        """Abre o vídeo. Se ele ficou pela metade, pergunta se continua de onde parou
+        (`resume_at` já respondido: a pergunta da abertura do app)."""
         if not path:
             path, _ = QFileDialog.getOpenFileName(
                 self, "Escolher vídeo", self._video_dir(), "Vídeos (*.mkv *.mp4 *.avi *.mov *.webm);;Todos (*)")
@@ -217,7 +225,14 @@ class MainWindow(QMainWindow):
             settings.put("last_video_dir", str(Path(path).parent))   # a próxima escolha abre nesta pasta
         except OSError:
             pass
+        self.save_position()                    # o vídeo que estava tocando fica guardado onde parou
+        if resume_at is None:
+            saved = resume.get(path)
+            if saved and ResumeDialog.ask(self, path, saved[0], saved[1]):
+                resume_at = saved[0]
         self.player.play(path)
+        self._pending_seek = max(resume_at - 3, 0.0) if resume_at else None   # volta 3 s para pegar a frase
+        self._last_saved = time.monotonic()
         self.player.paused = False
         self.video_path, self._tracks, self._embedded_error = path, None, None
         self._embedded_stream = None
@@ -613,8 +628,17 @@ class MainWindow(QMainWindow):
         if paused != self._shown_paused:
             self._shown_paused = paused
             self.controls.set_paused(paused)
+            if paused:
+                self.save_position()            # pausou: guarda onde parou
         if t is None:
             return
+        if self._pending_seek is not None and player.duration:   # o vídeo carregou: vai para onde parou
+            at, self._pending_seek = self._pending_seek, None
+            self._seek(at)
+            self.notify(f"Continuando de {resume.clock(at)}", 2500)
+            return
+        if not paused and time.monotonic() - self._last_saved > SAVE_EVERY:
+            self.save_position()                # de tempos em tempos: vale até se o PC desligar
         self.controls.set_position(t, player.duration or 0)
         if not paused and self._stop_at is not None and t >= self._stop_at:
             self._stop_at = None
@@ -688,7 +712,22 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         self.controls.set_compact(self.width() < COMPACT_BELOW)
 
+    def save_position(self):
+        """Guarda onde o vídeo está (para "continuar de onde parou")."""
+        self._last_saved = time.monotonic()
+        if self.video_path and self._pending_seek is None:     # antes de pular para o ponto salvo, não sobrescreve
+            resume.save(self.video_path, self.player.time, self.player.duration)
+
+    def _offer_resume(self):
+        """Ao abrir o app: o último vídeo ficou pela metade? Pergunta se quer continuar."""
+        if self.video_path or self._tour is not None or not self.isVisible():
+            return                              # já abriu um vídeo (pela linha de comando ou arrastando) ou tour
+        item = resume.last()
+        if item and ResumeDialog.ask(self, *item, on_start=True):
+            self.open_video(item[0], resume_at=item[1])
+
     def closeEvent(self, event):
+        self.save_position()
         self.timer.stop()
         self.popup.close()
         self.tasks.wait(1000)

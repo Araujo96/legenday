@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+- **Continuar de onde parou:** o app guarda onde cada vídeo parou (ao pausar, ao trocar de vídeo, ao fechar e
+  a cada 10 s, então vale até se o PC desligar). Ao abrir o app, pergunta "Continuar assistindo?" com o nome
+  do arquivo e o tempo ("Você parou em 42:13 de 1:45:00"); ao reabrir um vídeo visto pela metade, oferece
+  "Continuar de 42:13" ou "Começar do início". Volta 3 s antes, para pegar a frase. Não pergunta se o vídeo
+  mal começou (menos de 30 s) nem se já estava nos créditos; lembra os 50 vídeos mais recentes.
+
 ## 0.7.0
 - **Legenda de dentro do vídeo sem idioma informado agora abre sozinha:** muitos arquivos baixados não dizem o
   idioma das legendas. Sem faixa marcada como inglês, o app olha o texto das faixas sem idioma e carrega a
