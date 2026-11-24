@@ -134,6 +134,8 @@ def about_html(diagnostics: str) -> str:
 enviado ao serviço gratuito <b>MyMemory</b> (a menos que o modelo offline esteja instalado), a palavra ao
 dicionário online <b>Free Dictionary API</b> e ao <b>Wikimedia Commons</b> (de onde vêm as gravações de pronúncia).
 Com a legenda dupla ligada e sem legenda em português, cada fala também vai para o MyMemory.
+Ao abrir, o app pergunta ao <b>GitHub</b> qual é a versão mais nova, para avisar quando houver atualização
+(nada seu é enviado nessa consulta).
 Suas palavras salvas ficam só no seu computador.</p>
 
 <h2>Feito com</h2>

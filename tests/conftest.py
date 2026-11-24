@@ -15,3 +15,13 @@ def no_pronunciation_network(monkeypatch):
     def offline(url):
         raise OSError("rede desligada nos testes")
     monkeypatch.setattr(pronunciation, "_fetch", offline)
+
+
+@pytest.fixture(autouse=True)
+def no_update_network(monkeypatch):
+    """Nem o GitHub (aviso de versão nova): sem internet, o app simplesmente não avisa."""
+    from legenday.services import updates
+
+    def offline(url):
+        raise OSError("rede desligada nos testes")
+    monkeypatch.setattr(updates, "_fetch", offline)

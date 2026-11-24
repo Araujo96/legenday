@@ -5,9 +5,18 @@ dual (legenda em português), study (modo repetir frase e revisão) e player (ac
 """
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMenu, QMessageBox, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from legenday import __version__
 from legenday.branding import APP_NAME
@@ -18,8 +27,9 @@ from legenday.core.study import Shadowing
 from legenday.core.subtitles import SUB_EXTS, SubtitleTrack, find_sidecar, find_sidecar_pt, load_subtitles
 from legenday.core.vocab import VocabStore
 from legenday.playback.player import SoundPlayer, create_video_player
-from legenday.services import lookup
+from legenday.services import lookup, updates
 from legenday.ui.controls import COMPACT_BELOW, ControlBar
+from legenday.ui.donate_dialog import DonateDialog
 from legenday.ui.dual import DualSubtitles
 from legenday.ui.help_dialog import HelpDialog
 from legenday.ui.review_dialog import ReviewDialog
@@ -101,12 +111,15 @@ class MainWindow(QMainWindow):
         else:
             QTimer.singleShot(800, self._announce_reviews)
         self.tasks.run(lookup.warmup)              # lematizador e endereço dos serviços, antes do primeiro clique
+        self.update_btn = None
+        self.tasks.run(updates.check, self._on_update_check)   # saiu versão nova no GitHub?
 
     def _connect_controls(self):
         c = self.controls
         c.open_video.connect(lambda: self.open_video())
         c.show_vocab.connect(self.show_vocab)
         c.show_help.connect(self.show_help)
+        c.show_donate.connect(self.show_donate)
         c.play_pause.connect(self.toggle_pause)
         c.prev_line.connect(self.prev_line)
         c.next_line.connect(self.next_line)
@@ -356,6 +369,21 @@ class MainWindow(QMainWindow):
             return
         self._help = HelpDialog(self, self.diagnostics(), on_tour=self.start_tour)
         self._help.show()
+
+    def show_donate(self, *_):
+        DonateDialog(self).exec()
+
+    def _on_update_check(self, result):
+        """Versão nova no GitHub: botão no rodapé que abre a página de download. Sem internet, não faz nada."""
+        if not isinstance(result, updates.Update) or self.update_btn is not None:
+            return
+        self.update_btn = QPushButton(f"⬆  Nova versão {result.version} disponível · Baixar")
+        self.update_btn.setObjectName("update")
+        self.update_btn.setCursor(Qt.PointingHandCursor)
+        self.update_btn.setFocusPolicy(Qt.NoFocus)
+        self.update_btn.setToolTip(f"Você está usando a {__version__}. Clique para abrir a página de download.")
+        self.update_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(result.url)))
+        self.statusBar().addPermanentWidget(self.update_btn)
 
     def start_tour(self, *_):
         """Tour guiado pelos botões (sozinho na primeira vez; depois, pela ajuda)."""

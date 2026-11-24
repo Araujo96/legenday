@@ -8,10 +8,11 @@ pytest.importorskip("pytestqt")
 
 from PySide6.QtCore import QMimeData, QPointF, Qt, QUrl  # noqa: E402
 from PySide6.QtGui import QDropEvent  # noqa: E402
+from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from legenday.core import settings  # noqa: E402
 from legenday.playback.player import Player  # noqa: E402
-from legenday.services import lookup  # noqa: E402
+from legenday.services import lookup, updates  # noqa: E402
 from legenday.services.lookup import Details, Result  # noqa: E402
 from legenday.ui.main_window import MainWindow  # noqa: E402
 from legenday.ui.review_dialog import ReviewDialog  # noqa: E402
@@ -158,6 +159,37 @@ def test_help_can_replay_the_tour(qtbot, win):
     assert not win._help.isVisible()
     assert win._tour is not None and win._tour.isVisible()
     win._tour.finish()
+
+
+# ---------------------------------------------------------------- versão nova e doação
+def test_new_version_shows_a_download_button(qtbot, win, monkeypatch):
+    opened = []
+    monkeypatch.setattr("legenday.ui.main_window.QDesktopServices.openUrl", lambda url: opened.append(url.toString()))
+    win._on_update_check(updates.Update("9.9.9", "https://github.com/Araujo96/legenday/releases/tag/v9.9.9"))
+    assert win.update_btn.isVisible() and "9.9.9" in win.update_btn.text()
+    win.update_btn.click()
+    assert opened == ["https://github.com/Araujo96/legenday/releases/tag/v9.9.9"]
+
+
+def test_no_internet_or_up_to_date_shows_nothing(win):
+    win._on_update_check(OSError("sem internet"))
+    win._on_update_check(None)
+    assert win.update_btn is None
+
+
+def test_donate_dialog_has_a_valid_pix_code(qtbot):
+    from legenday.ui.donate_dialog import DonateDialog
+    dlg = DonateDialog(key="doe@exemplo.com", name="Lucas Araujo", city="Natal")
+    qtbot.addWidget(dlg)
+    assert dlg.code.startswith("000201") and "0115doe@exemplo.com" in dlg.code
+    dlg.copy_code_btn.click()
+    assert QApplication.clipboard().text() == dlg.code
+    assert dlg.copy_code_btn.text() == "Copiado ✓"
+
+
+def test_donate_button_only_appears_with_a_pix_key(win):
+    from legenday.branding import PIX_KEY
+    assert win.controls.btn_donate.isVisibleTo(win.controls) == bool(PIX_KEY)
 
 
 # ---------------------------------------------------------------- abrir arquivos

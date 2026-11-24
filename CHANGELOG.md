@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+- **Aviso de versão nova:** ao abrir, o app pergunta ao GitHub qual é a versão mais recente; se for mais nova
+  que a instalada, aparece no rodapé o botão **Nova versão X disponível · Baixar**, que abre a página de
+  download. Sem internet, nada aparece (e nada seu é enviado nessa consulta).
+- **Apoie o projeto:** botão **♥** na barra abre uma janela com QR Code PIX (padrão BR Code do Banco Central,
+  sem valor fixo) e botões para copiar a chave ou o código copia e cola.
+
 ## 0.5.0
 - **Tour guiado na primeira vez:** a janela escurece e um destaque amarelo passa por cada parte (Vídeo,
   Legenda, a área da legenda, controles, Repetir/PT, Palavras, sincronia e ajuda), com uma explicação curta em

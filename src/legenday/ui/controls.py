@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from legenday.branding import PIX_KEY
 from legenday.ui.icons import make_icon, toggle_icon
 
 SPEEDS = (0.5, 0.75, 1.0, 1.25, 1.5)
@@ -39,6 +40,7 @@ class ControlBar(QFrame):
     open_video = Signal()
     show_vocab = Signal()
     show_help = Signal()
+    show_donate = Signal()
     play_pause = Signal()
     prev_line = Signal()
     next_line = Signal()
@@ -99,6 +101,13 @@ class ControlBar(QFrame):
         self.btn_help.setFixedSize(34, 34)
         self._setup(self.btn_help, "Ajuda e atalhos (F1)", self.show_help.emit)
         left.addWidget(self.btn_help)
+        self.btn_donate = QToolButton()               # ♥: doação por PIX (só aparece com a chave configurada)
+        self.btn_donate.setText("♥")
+        self.btn_donate.setObjectName("donate")
+        self.btn_donate.setFixedSize(34, 34)
+        self._setup(self.btn_donate, "Gostou? Apoie o legenDay com um PIX de qualquer valor", self.show_donate.emit)
+        self.btn_donate.setVisible(bool(PIX_KEY))
+        left.addWidget(self.btn_donate)
         left.addStretch()
         self._labels = {self.btn_video: " Vídeo", self.btn_sub: " Legenda", self.btn_audio: " Áudio",
                         self.btn_shadow: " Repetir", self.btn_dual: " PT"}

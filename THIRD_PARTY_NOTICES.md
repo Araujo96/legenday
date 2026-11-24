@@ -12,6 +12,7 @@ cada um em arquivos separados dentro da pasta do programa (`_internal`), o que p
 | python-mpv | ligação do Python com o mpv | GPL-2.0+ ou LGPL-2.1+ | https://github.com/jaseg/python-mpv |
 | pysubs2 | leitura de legendas | MIT | https://github.com/tkarabela/pysubs2 |
 | simplemma | forma base das palavras | MIT | https://github.com/adbar/simplemma |
+| segno | QR Code do PIX (doações) | BSD-3-Clause | https://github.com/heuer/segno |
 | Python | linguagem | PSF License | https://www.python.org |
 | PyInstaller | geração do executável | GPL-2.0+ com exceção que não afeta os programas gerados | https://github.com/pyinstaller/pyinstaller |
 

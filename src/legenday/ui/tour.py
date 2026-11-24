@@ -71,8 +71,11 @@ def steps_for(win) -> list[Step]:
              lambda: [c.sync_btn.parentWidget()]),
         Step("Pronto!",
              "Ficou com dúvida? Clique no <b>?</b> (ou aperte <b>F1</b>) para ver a ajuda completa e os atalhos. "
-             "Por lá você também pode rever este tour.<br><br>Bons estudos!",
-             lambda: [c.btn_help]),
+             "Por lá você também pode rever este tour."
+             + ("<br><br>Se o app te ajudar, o <b>♥</b> ao lado aceita um PIX de qualquer valor."
+                if c.btn_donate.isVisibleTo(c) else "")
+             + "<br><br>Bons estudos!",
+             lambda: [c.btn_help, c.btn_donate]),
     ]
 
 

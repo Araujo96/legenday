@@ -78,6 +78,14 @@ Tudo com cache local em SQLite: a segunda consulta é instantânea.
 > aberto e está neste repositório. Alguns antivírus também podem desconfiar de programas feitos com PyInstaller;
 > se isso acontecer, prefira instalar pelo Python (abaixo).
 
+Na primeira vez, um tour rápido mostra para que serve cada botão. Quando sair uma versão nova, o app avisa no
+rodapé com um botão para baixar.
+
+### Apoie o projeto ☕
+
+O legenDay é gratuito e de código aberto. Se ele está te ajudando no inglês, um PIX de qualquer valor ajuda a
+manter o projeto: chave **`araujo.dev996@gmail.com`** (ou o botão **♥** dentro do app, que mostra o QR Code).
+
 Para quem prefere instalar pelo Python (ou quer ajudar a desenvolver):
 
 ## Instalação com Python (Windows)

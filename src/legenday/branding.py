@@ -9,6 +9,12 @@ APP_ID = "legenday.app"  # identifica o app na barra de tarefas do Windows
 TAGLINE = "Pratique inglês assistindo filmes"
 REPO_URL = "https://github.com/Araujo96/legenday"  # aparece em Ajuda > Sobre
 
+# Doações por PIX (botão ♥ na barra). Com PIX_KEY vazia, o botão não aparece.
+# Use uma chave aleatória ou de e-mail: a chave fica visível para quem doa (evite CPF e celular).
+PIX_KEY = "araujo.dev996@gmail.com"
+PIX_NAME = "Lucas Araujo"     # nome do recebedor no QR Code (até 25 letras, sem acento)
+PIX_CITY = "Natal"            # cidade do recebedor (até 15 letras)
+
 ASSETS = Path(__file__).resolve().parent / "assets"
 
 

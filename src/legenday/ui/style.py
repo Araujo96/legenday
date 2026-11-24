@@ -75,6 +75,14 @@ QFrame#controls {{ background:qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #18
 #controls QToolButton#help {{ background:{SURFACE}; border:1px solid {BORDER}; border-radius:17px;
     color:{ACCENT}; font-weight:bold; font-size:15px; }}
 #controls QToolButton#help:hover {{ background:{SURFACE_HOVER}; border-color:#4a4636; }}
+#controls QToolButton#donate {{ background:{SURFACE}; border:1px solid {BORDER}; border-radius:17px;
+    color:#ff7a8a; font-size:16px; }}
+#controls QToolButton#donate:hover {{ background:#3a2228; border-color:#ff7a8a; }}
+
+/* aviso de versão nova, no rodapé */
+QPushButton#update {{ background:{ACCENT}; color:#111; border:none; border-radius:9px; padding:3px 12px;
+    margin:0 10px 6px 0; font-size:12px; font-weight:bold; }}
+QPushButton#update:hover {{ background:{ACCENT_HOVER}; }}
 
 /* velocidade */
 #controls QComboBox {{ background:{SURFACE}; color:{TEXT}; border:1px solid {BORDER}; border-radius:10px;
