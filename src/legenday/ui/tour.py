@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QFrame, QGraphicsDropShadowEffect, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from legenday.core import settings
 from legenday.ui.style import ACCENT, DIALOG_STYLE, MUTED, TEXT
@@ -97,11 +97,8 @@ class Tour(QWidget):
         card.setObjectName("card")
         card.setStyleSheet(CARD_STYLE)
         card.setFixedWidth(370)
-        shadow = QGraphicsDropShadowEffect(card)
-        shadow.setBlurRadius(40)
-        shadow.setOffset(0, 8)
-        shadow.setColor(QColor(0, 0, 0, 160))
-        card.setGraphicsEffect(shadow)
+        # Sem QGraphicsDropShadowEffect: numa janela transparente no Windows, ele faz o Qt mandar para a tela só
+        # pedaços da imagem, e o cartão novo não aparecia ao trocar de passo. A sombra é desenhada no paintEvent.
 
         self.counter = QLabel(objectName="counter")
         self.title = QLabel(objectName="title")
@@ -201,7 +198,12 @@ class Tour(QWidget):
                 y = max(MARGIN, (self.height() - h) // 2)
         x = max(MARGIN, min(x, self.width() - w - MARGIN))
         card.move(x, y)
-        self.update()
+        # redesenha a janela inteira na hora (não só os pedaços que o Qt acha que mudaram): numa janela
+        # transparente, sobrava na tela o cartão do passo anterior
+        if self.isVisible():
+            self.repaint()
+        else:
+            self.update()
 
     def eventFilter(self, obj, event):
         if obj is self.win:
@@ -231,6 +233,12 @@ class Tour(QWidget):
             # botão embaixo no meio do tour
             p.fillRect(hole, QColor(0, 0, 0, 1))
         p.fillPath(shade, SHADE)
+        # sombra suave do cartão (camadas cada vez mais largas e mais claras, um pouco para baixo)
+        card = QRectF(self.card.geometry())
+        p.setPen(Qt.NoPen)
+        for i in range(1, 16):
+            p.setBrush(QColor(0, 0, 0, int(14 * (1 - i / 16))))
+            p.drawRoundedRect(card.adjusted(-i, -i + 8, i, i + 8), 14 + i, 14 + i)
         if not self.hole.isNull():
             p.setPen(QPen(QColor(ACCENT), 2))
             p.setBrush(Qt.NoBrush)

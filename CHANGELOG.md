@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+- Corrige o tour no Windows: ao clicar em **Vamos lá** / **Próximo**, o cartão novo não aparecia (ficava o
+  anterior na tela e só o botão "Próximo" do passo novo) até apertar uma tecla. A sombra do cartão agora é
+  desenhada pelo próprio tour, e a janela inteira é redesenhada a cada passo.
+
 ## 0.6.1
 - **Instalador para Windows (`legenDay-Setup.exe`):** dois cliques e pronto. Instala só para o usuário (sem
   pedir administrador), cria atalhos na área de trabalho e no menu Iniciar, abre o app no fim e aparece em
